@@ -1,0 +1,31 @@
+## @File        : application-*.yml
+## @Author      : lupfeliz@gmail.com
+## @Since       : 2025-10-08
+## @Description : Spring settings for local profile
+## @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+debug: "false"
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: "UTF-8"
+      enabled: "true"
+      force: "true"
+
+spring:
+  jackson:
+    time-zone: "Asia/Seoul"
+
+logging:
+  file:
+    path: "log"
+  level:
+    root: INFO
+
+system:
+  profile: "local"
+  settings:
+    override: "/tmp/test.yml"
+  assets:
+    cache:
+      dir: "${java.io.tmpdir}/xynerzy-studio/assets-cache"

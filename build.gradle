@@ -1,0 +1,130 @@
+plugins {
+  id 'java'
+  id 'war'
+  id 'org.springframework.boot' version '3.4.5'
+  id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.xynerzy'
+version = '0.0.1-SNAPSHOT'
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
+  compileJava.options.encoding = 'UTF-8'
+  compileTestJava.options.encoding = 'UTF-8'
+}
+
+configurations {
+  compileOnly {
+    extendsFrom annotationProcessor
+  }
+}
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+  maven { url 'https://repo.spring.io/milestone' }
+  maven { url 'https://repo.spring.io/snapshot' }
+  maven {
+    url = 'https://central.sonatype.com/repository/maven-snapshots/'
+  }
+}
+
+configurations {
+  all {
+    /* only junit 5 should be used */
+    exclude group: 'junit', module: 'junit'
+    exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+  }
+}
+
+dependencies {
+  /* Platform */
+  // implementation platform('org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT')
+  // implementation platform('com.google.cloud:libraries-bom:26.40.0')
+  // implementation platform('io.projectreactor:reactor-bom:2024.0.0-M2') 
+
+  /* Spring Base */
+  implementation 'org.springframework.boot:spring-boot-starter-web'
+  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+  implementation 'org.springframework.boot:spring-boot-starter-security'
+  implementation 'org.springframework.boot:spring-boot-starter-websocket'
+  implementation 'org.springframework.boot:spring-boot-starter-webflux'
+  implementation 'org.springframework.session:spring-session-core'
+  // implementation 'org.apache.kafka:kafka-streams'
+  // implementation 'org.springframework.kafka:spring-kafka'
+  // implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+
+  /* Google API */
+  // implementation 'com.google.api-client:google-api-client'
+  // implementation 'com.google.auth:google-auth-library-oauth2-http'
+
+  /* http client */
+  // implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+  // implementation 'org.apache.httpcomponents:httpmime:4.5.14'
+  // implementation 'io.projectreactor.netty:reactor-netty-core' 
+  // implementation 'io.projectreactor.netty:reactor-netty-http'
+
+  /* OpenAPI (swagger) */
+  implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+
+  /* Persistent and Retrivial */
+  runtimeOnly 'com.h2database:h2'
+  runtimeOnly 'org.postgresql:postgresql:42.3.9'
+  implementation 'org.apache.lucene:lucene-core:9.10.0'
+  implementation 'org.apache.lucene:lucene-queries:9.10.0'
+  implementation 'org.apache.lucene:lucene-queryparser:9.10.0'
+
+  /* Web token */
+  implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+  runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+  runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+  /* Apache commons */
+  implementation 'commons-codec:commons-codec:1.17.1'
+  implementation 'commons-io:commons-io:2.17.0'
+  implementation 'org.apache.commons:commons-text:1.12.0'
+  implementation 'org.apache.commons:commons-compress:1.27.1'
+  implementation 'org.apache.commons:commons-collections4:4.4'
+  implementation 'org.apache.commons:commons-lang3:3.17.0'
+
+  /* json / yaml / misc utils */
+  implementation 'org.json:json:20250107'
+  implementation 'org.yaml:snakeyaml:2.2'
+
+  /* log */
+  implementation 'org.logback-extensions:logback-ext-spring:0.1.5'
+
+  /* file-based library (compiled binary) */
+  implementation fileTree(dir: 'libs', include: [
+  ])
+
+  /* for build, development and test */
+  compileOnly 'org.projectlombok:lombok'
+  developmentOnly 'org.springframework.boot:spring-boot-devtools'
+  annotationProcessor 'org.projectlombok:lombok'
+  annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+  providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+
+  testImplementation 'org.projectlombok:lombok'
+  testAnnotationProcessor 'org.projectlombok:lombok'
+
+  /* JUnit 5 Jupiter API */
+  testImplementation 'org.junit.jupiter:junit-jupiter-api'
+  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+tasks.named('test') {
+  useJUnitPlatform()
+  String tstlvl = System.properties['project.build.test']
+  if (tstlvl == null || ''.equals(tstlvl)) { tstlvl = 'SIMPLE' }
+  systemProperty('spring.profiles.active', System.properties['spring.profiles.active'])
+  systemProperty('project.build.test', tstlvl)
+  reports.html.required = false
+}
+
+bootRun {
+  systemProperty('spring.profiles.active', System.properties['spring.profiles.active'])
+  systemProperty('java.file.encoding', 'UTF-8')
+}

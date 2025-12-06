@@ -1,0 +1,58 @@
+## @File        : application
+## @Author      : lupfeliz@gmail.com
+## @Since       : 2025-10-08
+## @Description : Spring application settings
+## @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+debug: false
+spring:
+  application:
+    name: "xynerzy-studio"
+  web:
+    resources:
+      static-locations: "classpath:/static/"
+  servlet:
+    multipart:
+      maxFileSize: "50MB"
+      maxRequestSize: "50MB"
+  jackson:
+    default-property-inclusion: non-null
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+## OPEN-API Config
+springdoc:
+  packages-to-scan: "com.xynerzy"
+  default-consumes-media-type: "application/json; charset=UTF-8"
+  default-produces-media-type: "application/json; charset=UTF-8"
+  server:
+    url: "/"
+    description: "Default URL"
+  swagger-ui:
+    path: "/swagger/"
+    disable-swagger-default-url: true
+    display-request-duration: true
+    operations-sorter: "alpha"
+  api-docs:
+    path: "/swagger/v3/api-docs/swagger-config"
+
+logging:
+  file:
+    path: "applog/log"
+    filename: "xynerzy-studio-api"
+  level:
+    root: "INFO"
+    jdbc: "INFO"
+    woori-sys: "INFO"
+    woori-work: "INFO"
+
+## 기타 프로젝트 일반 설정
+system:
+  storage:
+    path: "${java.io.tmpdir}/shared"
+  web:
+    download-from: ""
+    deploy-path: ""

@@ -1,0 +1,56 @@
+/**
+ * @File        : MainApiControl.java
+ * @Author      : lupfeliz@gmail.com
+ * @Since       : 2025-10-08
+ * @Description : Main API Control
+ * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ **/
+package com.xynerzy.main.control;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.xynerzy.main.service.MainService;
+import com.xynerzy.system.runtime.AppException;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j @RestController @RequestMapping
+public class MainApiControl {
+  static final String CONTROLLER_TAG1 = "Main page API"; 
+
+  @Autowired private MainService mainService;
+
+  @PostConstruct public void init() {
+    log.trace("INIT:{}", MainApiControl.class, mainService);
+  }
+
+  @Operation(summary = "Main API", tags = { CONTROLLER_TAG1 })
+  @GetMapping(path = { "/api/main" }) @ResponseBody
+  public Object main() throws AppException {
+    return mainService.main();
+  }
+  
+  @Operation(summary = "Sample Subscribe API", tags = { CONTROLLER_TAG1 })
+  @GetMapping(path = { "/api/subscribe/{topic}" }) @ResponseBody
+  public Object subscribe(@PathVariable String topic) throws AppException {
+    return mainService.subscribe(topic);
+  }
+
+  @Operation(summary = "Sample Publish API", tags = { CONTROLLER_TAG1 })
+  @PostMapping(path = { "/api/publish/{topic}" })
+  @ResponseBody
+  public Object publish(@PathVariable String topic, @RequestBody Map<String, Object> prm) throws AppException {
+    return mainService.publish(topic, prm);
+  }
+}

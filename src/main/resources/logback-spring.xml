@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+@File        : logback-spring.xml
+@Author      : lupfeliz@gmail.com
+@Since       : 2025-10-08
+@Description : logback configuration for spring framework
+@Site        : https://github.com/lupfeliz/xynerzy-studio-java
+-->
+<!-- Check for changes to file every 60 seconds -->
+<configuration scan="true" scanPeriod="60 seconds">
+  <!-- Using springProfile tag to configure multiple profiles -->
+  <springProfile name="local">
+    <!-- <property resource="logback-local.properties"/> -->
+  </springProfile>
+  <springProfile name="dev">
+    <!-- <property resource="logback-dev.properties"/> -->
+  </springProfile>
+  <!-- Can set properties within an Environment. -->
+  <springProperty scope="context" name="LOG_LEVEL" source="logging.level.root"/>
+
+  <!-- log file path -->
+  <!-- <property name="LOG_PATH" value="${logging.file.path}"/> -->
+  <springProperty scope="context" name="LOG_PATH" source="logging.file.path"/>
+  <!-- log file name -->
+  <!-- <property name="LOG_FILE_NAME" value="${logging.file.filename}"/> -->
+  <springProperty scope="context" name="LOG_FILE_NAME" source="logging.file.filename"/>
+  <!-- err log file name -->
+  <property name="ERR_LOG_FILE_NAME" value="err_log"/>
+  <!-- pattern -->
+  <property name="LOG_PATTERN" value="%-5level %d{yy-MM-dd HH:mm:ss}[%thread] [%logger{0}:%line] - %msg%n"/>
+
+  <!-- Console Appender -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- File Appender -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!-- File path settings -->
+    <file>${LOG_PATH}/${LOG_FILE_NAME}.log</file>
+
+    <!-- Output pattern settings -->
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+
+    <!-- Rolling policy -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- .gz,.zip extension for compress log file -->
+      <fileNamePattern>${LOG_PATH}/${LOG_FILE_NAME}.%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <!-- maximum file size kb, mb, gb -->
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <!-- Maximum number of days a file can be stored -->
+      <maxHistory>30</maxHistory>
+      <!--<MinIndex>1</MinIndex>
+      <MaxIndex>10</MaxIndex>-->
+    </rollingPolicy>
+  </appender>
+
+  <!-- Handling of Error log files -->
+  <appender name="Error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>error</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <file>${LOG_PATH}/${ERR_LOG_FILE_NAME}.log</file>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+    <!-- Rolling policy -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- .gz,.zip extension for compress log file -->
+      <fileNamePattern>${LOG_PATH}/${ERR_LOG_FILE_NAME}.%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <!-- maximum file size kb, mb, gb -->
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <!-- Maximum number of days a file can be stored -->
+      <maxHistory>60</maxHistory>
+    </rollingPolicy>
+  </appender>
+
+  <!-- root log level -->
+  <root level="${LOG_LEVEL}">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+    <appender-ref ref="Error"/>
+  </root>
+
+  <!-- package log level -->
+  <logger name="org.apache.ibatis" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+    <appender-ref ref="Error"/>
+  </logger>
+  <logger name="com.xynerzy" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+    <appender-ref ref="Error"/>
+  </logger>
+</configuration>
