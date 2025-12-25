@@ -3,7 +3,7 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Spring Security Config
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.system.config;
 
@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -44,14 +43,15 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j @Configuration @EnableWebSecurity
+@Slf4j @Configuration @EnableWebSecurity @RequiredArgsConstructor
 public class SecurityConfig {
-  @Autowired private CorsFilter corsFilter;
-  @Autowired private AuthFilter authFilter;
-  @Autowired private CustomAuthenticationEntryPoint authPoint;
-  @Autowired private CustomAccessDeniedHandler authHandler;
+  private final CorsFilter corsFilter;
+  private final AuthFilter authFilter;
+  private final CustomAuthenticationEntryPoint authPoint;
+  private final CustomAccessDeniedHandler authHandler;
 
   /* URL pattern matcher */
   public static AntPathRequestMatcher matcher(HttpMethod m, String path) {
@@ -77,6 +77,7 @@ public class SecurityConfig {
     reqPubLst.addAll(List.of(
       matcher(GET, "/"),
       matcher(GET, "/index.html"),
+      matcher(GET, "/favicon.ico"),
       matcher(GET, "/main"),
       matcher(GET, "/error"),
       matcher(GET, "/files/**"),

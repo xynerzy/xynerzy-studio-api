@@ -4,7 +4,7 @@
 @Author      : lupfeliz@gmail.com
 @Since       : 2025-10-08
 @Description : logback configuration for spring framework
-@Site        : https://github.com/lupfeliz/xynerzy-studio-java
+@Site        : https://github.com/xynerzy
 -->
 <!-- Check for changes to file every 60 seconds -->
 <configuration scan="true" scanPeriod="60 seconds">

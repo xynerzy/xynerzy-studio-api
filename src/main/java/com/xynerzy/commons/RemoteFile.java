@@ -3,7 +3,7 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Java Common Constants
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.commons;
 
@@ -13,7 +13,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.net.URI;
 
-public interface IRemoteFile<T extends IRemoteFile<?>> {
+public interface RemoteFile<T extends RemoteFile<?>> {
   default public String getName() {
     String ret = "";
     return ret;

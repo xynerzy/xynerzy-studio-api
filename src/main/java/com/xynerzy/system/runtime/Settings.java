@@ -3,7 +3,7 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : System settings
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.system.runtime;
 

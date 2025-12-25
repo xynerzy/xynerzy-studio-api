@@ -3,7 +3,7 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Application config
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.system.config;
 
@@ -27,10 +27,14 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
 public class ApplicationConfig {
+
+  public static final String SECURITY_SCHEME_NAME = "bearerAuth";
 
   @Configuration @EnableAspectJAutoProxy(exposeProxy = true)
   public static class AspectConfig {
@@ -46,14 +50,22 @@ public class ApplicationConfig {
       server.setUrl(svurl);
       server.setDescription(description);
       servers.add(server);
+      Components components = new Components();
+      components.addSecuritySchemes(SECURITY_SCHEME_NAME,
+        new SecurityScheme()
+          .type(SecurityScheme.Type.HTTP)
+          .scheme("bearer")
+          .bearerFormat("JWT")
+        );
       return new OpenAPI()
         .servers(servers)
-        .components(new Components())
+        .components(components)
+        .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
         .info(new Info().title("Xynerzy AI Cowork Studio")
         );
     }
   }
- 
+
   @Configuration
   public static class PersistentConfig {
   }

@@ -3,7 +3,7 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-31
  * @Description : Simple Message Broker
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.commons;
 
@@ -112,6 +112,7 @@ public class SimplePublisherSubscribers<E> implements Closeable {
       if (matcher == null) { return ret; }
       for (int inx = 0; inx < publisher.size(); inx++) {
         if (matcher.equals(publisher.get(inx))) {
+					log.debug("REMOVE:{} / {}", matcher.getTopic(), matcher.getUid());
           publisher.set(inx, null);
           ret = matcher.getData();
         }
@@ -139,6 +140,7 @@ public class SimplePublisherSubscribers<E> implements Closeable {
           TopicEntry<E> product = publisher.get(inx);
           if (topic.equals(product.getTopic()) & product.isProcessed()) {
             product.setProcessed(false);
+						log.debug("RESTORE:{} / {}", product.getTopic(), product.getUid());
           }
         }
       }
@@ -318,7 +320,7 @@ public class SimplePublisherSubscribers<E> implements Closeable {
     private String uid;
     private String topic;
     private E data;
-    boolean processed;
+    private boolean processed;
     private long ctime;
 
     public TopicEntry(String uid, String topic, E data, long ctime) {

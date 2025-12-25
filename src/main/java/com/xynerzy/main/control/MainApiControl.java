@@ -3,13 +3,12 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Main API Control
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.main.control;
 
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,13 +22,14 @@ import com.xynerzy.system.runtime.AppException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j @RestController @RequestMapping
+@Slf4j @RestController @RequestMapping @RequiredArgsConstructor
 public class MainApiControl {
   static final String CONTROLLER_TAG1 = "Main page API"; 
 
-  @Autowired private MainService mainService;
+  private final MainService mainService;
 
   @PostConstruct public void init() {
     log.trace("INIT:{}", MainApiControl.class, mainService);

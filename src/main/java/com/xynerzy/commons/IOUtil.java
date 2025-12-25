@@ -3,7 +3,7 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Java Input / Output utility
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.commons;
 
@@ -415,7 +415,7 @@ public class IOUtil {
     }
     return String.valueOf(ret);
   }
-  
+
   public static int writeByte8ToBuffer(byte[] buf, int pos, int val) {
     buf[pos++] = (byte) (val);
     return pos;
@@ -463,29 +463,29 @@ public class IOUtil {
 
   public static short readShort16FromBuffer(byte[] buf, int[] pos) {
     return (short) (
-      ((buf[pos[0]++] & 0xff) << 8) | 
+      ((buf[pos[0]++] & 0xff) << 8) |
       ((buf[pos[0]++] & 0xff))
     );
   }
 
   public static int readInt32FromBuffer(byte[] buf, int[] pos) {
     return (int) (
-      ((buf[pos[0]++] & 0xff) << 24) | 
-      ((buf[pos[0]++] & 0xff) << 16) | 
-      ((buf[pos[0]++] & 0xff) <<  8) | 
+      ((buf[pos[0]++] & 0xff) << 24) |
+      ((buf[pos[0]++] & 0xff) << 16) |
+      ((buf[pos[0]++] & 0xff) <<  8) |
       ((buf[pos[0]++] & 0xff))
     );
   }
 
   public static long readLong64FromBuffer(byte[] buf, int[] pos) {
     return (long) (
-      ((buf[pos[0]++] & 0xff) << 56) | 
-      ((buf[pos[0]++] & 0xff) << 48) | 
-      ((buf[pos[0]++] & 0xff) << 40) | 
-      ((buf[pos[0]++] & 0xff) << 32) | 
-      ((buf[pos[0]++] & 0xff) << 24) | 
-      ((buf[pos[0]++] & 0xff) << 16) | 
-      ((buf[pos[0]++] & 0xff) <<  8) | 
+      ((buf[pos[0]++] & 0xff) << 56) |
+      ((buf[pos[0]++] & 0xff) << 48) |
+      ((buf[pos[0]++] & 0xff) << 40) |
+      ((buf[pos[0]++] & 0xff) << 32) |
+      ((buf[pos[0]++] & 0xff) << 24) |
+      ((buf[pos[0]++] & 0xff) << 16) |
+      ((buf[pos[0]++] & 0xff) <<  8) |
       ((buf[pos[0]++] & 0xff))
     );
   }
@@ -544,6 +544,7 @@ public class IOUtil {
       stream.flush();
     }
   }
+
   public static class RawBytesInputStream {
     private byte[] buffer;
     private int[] pos;
@@ -551,181 +552,47 @@ public class IOUtil {
     public RawBytesInputStream(InputStream istream, byte[] buffer) {
       this.istream = istream;
       this.buffer = buffer;
-      this.pos = new int[] { 0, -1 };
+      this.pos = new int[] { 0, -2 };
     }
 
-    private int readToBuffer() throws IOException {
-      int ret = -1;
-      ret = istream.read(buffer, 0, buffer.length);
-      pos[0] = 0;
-      pos[1] = ret;
+    private int readToBuffer(int len) throws IOException {
+      int ret = 0;
+      if (pos[0] == pos[1] || pos[1] == -2) {
+        ret = istream.read(buffer, 0, buffer.length);
+        pos[0] = 0;
+        pos[1] = ret;
+      }
       return ret;
     }
 
-    // public byte readByte8() {
-    //   return IOUtil.readByte8FromBuffer(buffer, null);      
-    // }
-  } 
-  
-//   public static void writeUChar(BytesBuffer buffer, int i) {
-//     writeShort(buffer, i);
-//   }
-// 
-//   public static void writeAChar(BytesBuffer buffer, int i) {
-//     buffer.write((byte) i);
-//   }
-// 
-//    ublic static void writeVInt(BytesBuffer buffer, int i) {
-//     while ((i & ~0x7F) != 0) {
-//       buffer.write((byte) ((i & 0x7F) | 0x80));
-//       i >>>= 7;
-//     }
-//     buffer.write((byte) i);
-//   }
-// 
-//   public static void writeVInt(OutputStream os, int i) throws IOException {
-//     while ((i & ~0x7F) != 0) {
-//       os.write(((i & 0x7F) | 0x80));
-//       i >>>= 7;
-//     }
-//     os.write(i);
-//   }
-// 
-//   // 입력정수의 가변길이를 계산한다.
-//   public static int lenVariableByte(int v) {
-//     int byteCnt = 1;
-//     // 7바이트씩 몇번 shift를 하게되는지 계산하면 된다. 부호비트를 유지하지 않는 logical shift를 이용한다.
-//     while ((v >>>= 7) != 0)
-//       byteCnt++;
-// 
-//     return byteCnt;
-//   }
-// 
-//   public static long readLong(byte[] buffer, int pos) {
-//     return (((long) readInt(buffer, pos)) << 32) | (readInt(buffer, pos+4) & 0xFFFFFFFFL);
-//   }
-// 
-//   public static int readInt(BytesBuffer buffer) {
-//     return ((buffer.readByte() & 0xFF) << 24) | ((buffer.readByte() & 0xFF) << 16) | ((buffer.readByte() & 0xFF) << 8)
-//         | (buffer.readByte() & 0xFF);
-//   }
-// 
-//   public static int readInt(byte[] buffer, int pos) {
-//     return ((buffer[pos + 0] & 0xFF) << 24) | ((buffer[pos + 1] & 0xFF) << 16) | ((buffer[pos + 2] & 0xFF) << 8) | (buffer[pos + 3] & 0xFF);
-//   }
-// 
-//   public static short readShort(byte[] buffer, int pos) {
-//     return (short) (((buffer[pos] & 0xFF) << 8) | (buffer[pos + 1] & 0xFF));
-//   }
-// 
-//   public static int readVInt(BytesBuffer buffer) {
-//     byte b = buffer.readByte();
-//     if (b >= 0)
-//       return b;
-//     int i = b & 0x7F;
-//     b = buffer.readByte();
-//     i |= (b & 0x7F) << 7;
-//     if (b >= 0)
-//       return i;
-//     b = buffer.readByte();
-//     i |= (b & 0x7F) << 14;
-//     if (b >= 0)
-//       return i;
-//     b = buffer.readByte();
-//     i |= (b & 0x7F) << 21;
-//     if (b >= 0)
-//       return i;
-//     b = buffer.readByte();
-//     // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
-//     i |= (b & 0x0F) << 28;
-//     if ((b & 0xF0) == 0)
-//       return i;
-//     return -1;
-//   }
-// 
-//   public static int readVInt(byte[] buffer, int pos) {
-//     byte b = buffer[pos++];
-//     if (b >= 0)
-//       return b;
-//     int i = b & 0x7F;
-//     b = buffer[pos++];
-//     i |= (b & 0x7F) << 7;
-//     if (b >= 0)
-//       return i;
-//     b = buffer[pos++];
-//     i |= (b & 0x7F) << 14;
-//     if (b >= 0)
-//       return i;
-//     b = buffer[pos++];
-//     i |= (b & 0x7F) << 21;
-//     if (b >= 0)
-//       return i;
-//     b = buffer[pos++];
-//     // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
-//     i |= (b & 0x0F) << 28;
-//     if ((b & 0xF0) == 0)
-//       return i;
-//     return -1;
-//   }
-// 
-//   public static char[] readAChars(byte[] buffer, int pos, int len) {
-//     char[] array = new char[len];
-//     for (int i = 0; i < len; i++)
-//       array[i] = (char) buffer[pos + i];
-//     return array;
-//   }
-// 
-//   public static char[] readUChars(byte[] buffer, int pos, int len) {
-//     char[] array = new char[len / 2];
-//     for (int i = 0; i < array.length; i++) {
-//       array[i] = (char) readShort(buffer, pos + i * 2);
-//     }
-//     return array;
-//   }
-// 
-//   public static boolean copy(File a, File b) throws IOException {
-//     FileChannel fc1 = new FileInputStream(a).getChannel();
-//     if (b.exists())
-//       b.delete();
-//     FileChannel fc2 = new FileOutputStream(b).getChannel();
-//     long count1 = fc1.size();
-//     fc1.transferTo(0, count1, fc2);
-//     fc1.close();
-//     fc2.close();
-//     return true;
-//   }
-//   public static void transferFrom(DataOutput output, File inFile, long offset, long length, byte[] buffer) throws IOException {
-//     RandomAccessFile rin = null;
-//     try {
-//       rin = new RandomAccessFile(inFile, "r");
-//       rin.seek(offset);
-//       int size = Math.min((int) length, buffer.length);// 대부분 buffer사이즈가 되며, length가 작을 경우에만, length가 된다.
-//       while (length > 0) {
-//         int nread = rin.read(buffer, 0, size);
-//         output.writeBytes(buffer, 0, nread);
-//         length -= nread;
-//       }
-//     } finally {
-//       if (rin != null) {
-//         rin.close();
-//       }
-//     }
-//   }
-//   public static void transferFrom(DataOutput output, DataInput input, long length, byte[] buffer) throws IOException {
-//     while (length > 0) {
-//       int size = Math.min((int) length, buffer.length);
-//       input.readBytes(buffer, 0, size);
-//       output.writeBytes(buffer, 0, size);
-//       length -= size;
-//     }
-//   }
-//   public static byte readByte(RandomAccessFile raf) throws IOException {
-//     return raf.readByte();
-//   }
-//   public static int readInt(RandomAccessFile raf) throws IOException {
-//     return ((readByte(raf) & 0xFF) << 24) | ((readByte(raf) & 0xFF) << 16) | ((readByte(raf) & 0xFF) << 8) | (readByte(raf) & 0xFF);
-//   }
-//   public static long readLong(RandomAccessFile raf) throws IOException {
-//     return (((long) readInt(raf)) << 32) | (readInt(raf) & 0xFFFFFFFFL);
-//   }
+    public byte readByte8() throws IOException {
+      readToBuffer(1);
+      return IOUtil.readByte8FromBuffer(buffer, pos);
+    }
+
+    public short readShort16() throws IOException {
+      readToBuffer(2);
+      return IOUtil.readShort16FromBuffer(buffer, pos);
+    }
+
+    public int readInt32() throws IOException {
+      readToBuffer(4);
+      return IOUtil.readInt32FromBuffer(buffer, pos);
+    }
+
+    public long readLong64() throws IOException {
+      readToBuffer(8);
+      return IOUtil.readLong64FromBuffer(buffer, pos);
+    }
+
+    public float readFloat32() throws IOException {
+      readToBuffer(4);
+      return IOUtil.readFloat32FromBuffer(buffer, pos);
+    }
+
+    public double readDouble64() throws IOException {
+      readToBuffer(8);
+      return IOUtil.readDouble64FromBuffer(buffer, pos);
+    }
+  }
 }

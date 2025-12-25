@@ -2,11 +2,11 @@
 ## @Author      : lupfeliz@gmail.com
 ## @Since       : 2025-10-08
 ## @Description : Spring application settings
-## @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+## @Site        : https://github.com/xynerzy
 debug: false
 spring:
   application:
-    name: "xynerzy-studio"
+    name: "xynerzy-studio-api"
   web:
     resources:
       static-locations: "classpath:/static/"

@@ -1,5 +1,5 @@
 /**
- * @File        : CoreSettings.java
+ * @File        : CoreSystem.java
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Core system utility
@@ -13,6 +13,7 @@ import static com.xynerzy.commons.DataUtil.mergeMap;
 import static com.xynerzy.commons.DataUtil.newMap;
 import static com.xynerzy.commons.IOUtil.getFile;
 import static com.xynerzy.commons.IOUtil.getReader;
+import static com.xynerzy.commons.IOUtil.mkdirs;
 import static com.xynerzy.commons.IOUtil.openResourceStream;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static com.xynerzy.commons.ReflectionUtil.cast;
@@ -87,7 +88,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CoreSystem implements ApplicationContextAware, ServletContextListener {
 
   private static CoreSystem instance = null;
-  
+
   private static final Pattern PTN_PLACEHOLDER = Pattern.compile("[$][{]([a-zA-Z0-9_.-]+)([:].*){0,1}[}]");
 
   private BlockingQueue<Runnable> threadQueue;
@@ -106,8 +107,9 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
 
   @Getter private File staticWeb;
 
-  private CoreSystem() {
+  private CoreSystem(Environment environment) {
     log.trace("INSTANCE:{}", instance);
+    this.environment = environment;
     synchronized(CoreSystem.class) {
       if (instance == null || instance != this) {
         if (instance != null && instance.threadQueue != null) { this.threadQueue = instance.threadQueue; }
@@ -122,11 +124,10 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
     }
   }
 
-  public static CoreSystem getInstance() {
+  public static CoreSystem getInstance() { return getInstance(null); }
+  public static CoreSystem getInstance(Environment environment) {
     synchronized(CoreSystem.class) {
-      if (instance == null) {
-        instance = new CoreSystem();
-      }
+      if (instance == null && environment != null) { instance = new CoreSystem(environment); }
       return instance;
     }
   }
@@ -265,16 +266,16 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
   @Override public void contextDestroyed(ServletContextEvent sce) {
     log.info("destroy..");
   }
-  
+
   public void reloadSettings() {
     log.debug("RELOADING-CONFIG...");
     Yaml yaml = new Yaml();
     Reader reader = null;
     Map<String, Object> settingMap = newMap();
     String profile = "";
-    
+
     profile = System.getProperty("spring.profiles.active");
-    
+
     /** 1. read yml properties */
     profile = concat(profile).split(" ")[0];
     log.debug("PROFILE:{}", profile);
@@ -287,14 +288,25 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
       try {
         switch (inx) {
         case 0: {
-          fileName = concat("/application.yml");
+          fileName = concat("classpath:/application.yml");
         } break;
-        default: 
-          fileName = concat("/application-", profile, ".yml");
-        }
+        case 1: {
+          fileName = concat("classpath:/application-", profile, ".yml");
+        } break;
+        case 2: {
+          fileName = concat("${user.home}/.xynerzy-studio/application.yml");
+        } break;
+        default: }
         log.debug("SETTINGS-FILE:{}", fileName);
-        reader = getReader(openResourceStream(Application.class, fileName), UTF8);
-        settingMap = mergeMap(settingMap, yaml.load(reader));
+        reader = null;
+        if (fileName.startsWith("classpath:/")) {
+          reader = getReader(openResourceStream(Application.class, fileName), UTF8);
+        } else {
+          File file = getFile(fillPlaceholder(fileName, ""));
+          if (!file.getParentFile().exists()) { mkdirs(file.getParentFile()); }
+          if (file.exists()) { reader = getReader(file, UTF8); }
+        }
+        if (reader != null) { settingMap = mergeMap(settingMap, yaml.load(reader)); }
       } catch (Exception e) {
         log.debug("APPLICATION-PROPERTY PROFILE {} NOT FOUND", profile);
       } finally {
@@ -461,7 +473,7 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
     public CoreSystemWebRequestInterceptor(WebRequestInterceptor intr) {
       super(intr);
     }
-    
+
     @Override public boolean preHandle(
       @NonNull HttpServletRequest request,
       @NonNull HttpServletResponse response,

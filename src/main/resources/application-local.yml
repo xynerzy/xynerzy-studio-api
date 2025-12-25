@@ -2,7 +2,7 @@
 ## @Author      : lupfeliz@gmail.com
 ## @Since       : 2025-10-08
 ## @Description : Spring settings for local profile
-## @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+## @Site        : https://github.com/xynerzy
 debug: "false"
 server:
   port: 8080

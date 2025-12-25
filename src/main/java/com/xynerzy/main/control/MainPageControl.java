@@ -3,13 +3,12 @@
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2025-10-08
  * @Description : Main Page Control
- * @Site        : https://github.com/lupfeliz/xynerzy-studio-java
+ * @Site        : https://github.com/xynerzy
  **/
 package com.xynerzy.main.control;
 
 import static com.xynerzy.commons.WebUtil.currentRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,16 +21,16 @@ import com.xynerzy.system.runtime.Settings;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-
-@Slf4j @Controller @RequestMapping
+@Slf4j @Controller @RequestMapping @RequiredArgsConstructor
 public class MainPageControl {
   static final String CONTROLLER_TAG1 = "Main page"; 
 
-  @Autowired private MainService mainService;
+  private final MainService mainService;
 
-  @Autowired private Settings settings;
+  private final Settings settings;
 
   @PostConstruct public void init() {
     log.trace("INIT:{}", MainPageControl.class, mainService);
