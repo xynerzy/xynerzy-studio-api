@@ -29,12 +29,12 @@ public class LLMApiOllama implements LLMApiBase {
 
   public LLMApiOllama(LLMProperties llmProperties, WebClient.Builder webClientBuilder) {
     this.llmProperties = llmProperties;
-    this.webClient = webClientBuilder.baseUrl(llmProperties.getOllama().getBaseUrl()).build();
+    this.webClient = webClientBuilder.baseUrl(llmProperties.getBaseUrl()).build();
   }
 
   @Override
   public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    OllamaRequest ollamaRequest = new OllamaRequest(llmProperties.getOllama().getModel(), request, true);
+    OllamaRequest ollamaRequest = new OllamaRequest(llmProperties.getModel(), request, true);
 
     webClient.post()
       .uri("/api/generate")

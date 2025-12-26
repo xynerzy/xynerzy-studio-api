@@ -29,7 +29,7 @@ public class LLMApiOpenAI implements LLMApiBase {
   private final WebClient.Builder webClientBuilder;
 
   @Override public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    LLMProperties.OpenAI openAIProps = llmProperties.getOpenai();
+    LLMProperties openAIProps = llmProperties;
 
     /* Set the connection timeout to 5 seconds. */
     HttpClient httpClient = HttpClient.create()

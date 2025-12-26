@@ -30,7 +30,7 @@ public class LLMApiGemini implements LLMApiBase {
 
   @Override
   public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    LLMProperties.Gemini geminiProps = llmProperties.getGemini();
+    LLMProperties geminiProps = llmProperties;
     WebClient webClient = webClientBuilder.baseUrl(GEMINI_BASE_URL).build();
     GeminiRequest geminiRequest = createGeminiRequest(request);
 

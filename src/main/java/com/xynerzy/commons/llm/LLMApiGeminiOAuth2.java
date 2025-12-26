@@ -40,7 +40,7 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
   private void streamChatWithOauth2(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     try {
       /* 1. Issue an access token using a refresh token */
-      LLMProperties.Gemini oauth2Props = llmProperties.getGemini();
+      LLMProperties oauth2Props = llmProperties;
       String accessToken = new GoogleRefreshTokenRequest(
         new NetHttpTransport(),
         new GsonFactory(),
