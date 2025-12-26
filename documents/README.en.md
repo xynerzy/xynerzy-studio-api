@@ -91,11 +91,12 @@ npm run dev
 - [ ] Core: User authentication and authorization.
 - [ ] **Future**: Implement multi-server sharding for high availability and scalability.
 
-## ✨ Contributors
+## 🙌 Contributors
 
-- Jaebaek Jeong (@lupfeliz) — Core maintainer
-<!-- ALL-CONTRIBUTORS-LIST:START -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+[@lupfeliz](https://github.com/lupfeliz)
+[@vnfldp](https://github.com/vnfldp)
+[@zioni78](https://github.com/zioni78)
+[@lee-jungyeon](https://github.com/lee-jungyeon)
 
 We welcome contributions from everyone! If you're interested in helping, please feel free to:
 - Open an issue to report a bug or suggest a new feature.

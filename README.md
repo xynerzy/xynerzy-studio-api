@@ -89,11 +89,12 @@ npm run dev
 - [ ] 핵심: 사용자 인증 및 권한 관리
 - [ ] **향후 계획**: 고가용성과 확장성을 위한 멀티 서버 샤딩 구현
 
-## ✨ 기여자 (Contributors)
+## 🙌 기여자 (Contributors)
 
-- 정재백 (@lupfeliz) — 코어개발자
-<!-- ALL-CONTRIBUTORS-LIST:START -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+[@lupfeliz](https://github.com/lupfeliz)
+[@vnfldp](https://github.com/vnfldp)
+[@zioni78](https://github.com/zioni78)
+[@lee-jungyeon](https://github.com/lee-jungyeon)
 
 모든 분들의 기여를 환영합니다! 참여를 원하신다면 다음 방법을 이용해 주세요:
 - 버그 제보 또는 신규 기능 제안을 위한 이슈 등록
