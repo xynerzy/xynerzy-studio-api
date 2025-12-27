@@ -25,11 +25,11 @@ import reactor.netty.http.client.HttpClient;
 @Slf4j @Component("openAIChatApi") @RequiredArgsConstructor
 public class LLMApiOpenAI implements LLMApiBase {
 
-  private final LLMProperties llmProperties;
+  private final LLMProperties props;
   private final WebClient.Builder webClientBuilder;
 
   @Override public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    LLMProperties openAIProps = llmProperties;
+    LLMProperties openAIProps = props;
 
     /* Set the connection timeout to 5 seconds. */
     HttpClient httpClient = HttpClient.create()

@@ -23,18 +23,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j @Component("ollamaChatApi")
 public class LLMApiOllama implements LLMApiBase {
 
-  private final LLMProperties llmProperties;
+  private final LLMProperties props;
   private final WebClient webClient;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   public LLMApiOllama(LLMProperties llmProperties, WebClient.Builder webClientBuilder) {
-    this.llmProperties = llmProperties;
+    this.props = llmProperties;
     this.webClient = webClientBuilder.baseUrl(llmProperties.getBaseUrl()).build();
   }
 
   @Override
   public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    OllamaRequest ollamaRequest = new OllamaRequest(llmProperties.getModel(), request, true);
+    OllamaRequest ollamaRequest = new OllamaRequest(props.getModel(), request, true);
 
     webClient.post()
       .uri("/api/generate")

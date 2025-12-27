@@ -27,10 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j @Component("geminiChatApiOAuth2") @RequiredArgsConstructor
 public class LLMApiGeminiOAuth2 implements LLMApiBase {
 
-  private final LLMProperties llmProperties;
+  private final LLMProperties props;
   private final WebClient.Builder webClientBuilder;
-
-  private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
 
   @Override
   public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
@@ -40,25 +38,29 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
   private void streamChatWithOauth2(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     try {
       /* 1. Issue an access token using a refresh token */
-      LLMProperties oauth2Props = llmProperties;
+      String baseUrl = props.getBaseUrl();
+      String template = props.getApiTemplate();
+      if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
+      if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
       String accessToken = new GoogleRefreshTokenRequest(
         new NetHttpTransport(),
         new GsonFactory(),
-        oauth2Props.getRefreshToken(),
-        oauth2Props.getClientId(),
-        oauth2Props.getClientSecret())
+        props.getRefreshToken(),
+        props.getClientId(),
+        props.getClientSecret())
         .execute()
         .getAccessToken();
 
       /* 2. Call the API using the issued access token. */
-      WebClient webClient = webClientBuilder.baseUrl(GEMINI_BASE_URL)
+      WebClient webClient = webClientBuilder.baseUrl(baseUrl)
         .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
         .build();
 
       GeminiRequest geminiRequest = createGeminiRequest(request);
 
+      final String TEMPLATE = template;
       webClient.post()
-        .uri("/v1beta/models/gemini-1.5-flash:streamGenerateContent")
+        .uri(TEMPLATE.replaceAll("\\$\\{MODEL\\}", props.getModel()))
         .bodyValue(geminiRequest)
         .retrieve()
         .bodyToFlux(GeminiResponse.class)

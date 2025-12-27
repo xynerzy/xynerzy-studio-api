@@ -95,7 +95,7 @@ npm run dev
 
 - [꿈꾸는늑대](https://github.com/lupfeliz)
 - [재미이써](https://github.com/vnfldp)
-- [frauyoung]
+- frauyoung
 - [zioni78](https://github.com/zioni78)
 - [myjung300](https://github.com/myjung300)
 - [lee-jungyeon](https://github.com/lee-jungyeon)

@@ -23,21 +23,24 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j @Component("geminiChatApi") @RequiredArgsConstructor
 public class LLMApiGemini implements LLMApiBase {
 
-  private final LLMProperties llmProperties;
+  private final LLMProperties props;
   private final WebClient.Builder webClientBuilder;
-
-  private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
 
   @Override
   public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    LLMProperties geminiProps = llmProperties;
-    WebClient webClient = webClientBuilder.baseUrl(GEMINI_BASE_URL).build();
+    String baseUrl = props.getBaseUrl();
+    String template = props.getApiTemplate();
+    if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
+    if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
+
+    WebClient webClient = webClientBuilder.baseUrl(baseUrl).build();
     GeminiRequest geminiRequest = createGeminiRequest(request);
 
+    final String TEMPLATE = template;
     webClient.post()
       .uri(uriBuilder -> uriBuilder
-        .path("/v1beta/models/gemini-1.5-flash:streamGenerateContent")
-        .queryParam("key", geminiProps.getApiKey())
+        .path(TEMPLATE.replaceAll("\\$\\{MODEL\\}", props.getModel()))
+        .queryParam("key", props.getApiKey())
         .build())
       .bodyValue(geminiRequest)
       .retrieve()
