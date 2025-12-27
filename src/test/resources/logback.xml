@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+@File        : logback.xml
+@Author      : lupfeliz@gmail.com
+@Since       : 2025-10-08
+@Description : logback configuration for Junit Test
+@Site        : https://github.com/xynerzy
+-->
+<configuration scan="true" scanPeriod="10 seconds">
+  <property resource="application.yml"/>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>[%date %level] \(%logger{40}:%line\) %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="LOG_FILE" class="ch.qos.logback.core.FileAppender">
+    <file>log/file-log.txt</file>
+    <encoder>
+      <pattern>[%date %level] \(%logger{40}:%line\) %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.mortbay" level="INFO" additivity="false">
+    <appender-ref ref="systemlog" />
+  </logger>
+  <logger name="org.apache.jasper" level="INFO" additivity="false">
+    <appender-ref ref="systemlog" />
+  </logger>
+
+  <logger name="org.hibernate" level="WARN" additivity="false" />
+  <logger name="org.apache.http" level="INFO" additivity="false" />
+  <logger name="org.apache.ibatis" level="WARN" additivity="false" />
+  <logger name="org.apache.derby" level="WARN" additivity="false" />
+  <logger name="org.springframework.ai.chat.metadata.ChatResponseMetadata" level="WARN" additivity="false" />
+  <logger name="org.springframework.http.codec.json.Jackson2JsonDecoder" level="WARN" additivity="false" />
+  <logger name="org.springframework.web.HttpLogging" level="WARN" additivity="false" />
+
+  <root level="debug">
+    <appender-ref ref="STDOUT" />
+    <appender-ref ref="LOG_FILE" />
+  </root>
+</configuration>

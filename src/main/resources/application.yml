@@ -49,7 +49,7 @@ logging:
     woori-sys: "INFO"
     woori-work: "INFO"
 
-## 기타 프로젝트 일반 설정
+## project specific settings
 system:
   storage:
     path: "${java.io.tmpdir}/shared"

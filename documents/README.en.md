@@ -93,10 +93,13 @@ npm run dev
 
 ## 🙌 Contributors
 
-[@lupfeliz](https://github.com/lupfeliz)
-[@vnfldp](https://github.com/vnfldp)
-[@zioni78](https://github.com/zioni78)
-[@lee-jungyeon](https://github.com/lee-jungyeon)
+- [꿈꾸는늑대](https://github.com/lupfeliz)
+- [재미이써](https://github.com/vnfldp)
+- [frauyoung]
+- [zioni78](https://github.com/zioni78)
+- [myjung300](https://github.com/myjung300)
+- [lee-jungyeon](https://github.com/lee-jungyeon)
+- [TIKITAK](https://github.com/JEONHYUNTAK)
 
 We welcome contributions from everyone! If you're interested in helping, please feel free to:
 - Open an issue to report a bug or suggest a new feature.

@@ -91,10 +91,13 @@ npm run dev
 
 ## 🙌 기여자 (Contributors)
 
-[@lupfeliz](https://github.com/lupfeliz)
-[@vnfldp](https://github.com/vnfldp)
-[@zioni78](https://github.com/zioni78)
-[@lee-jungyeon](https://github.com/lee-jungyeon)
+- [꿈꾸는늑대](https://github.com/lupfeliz)
+- [재미이써](https://github.com/vnfldp)
+- [frauyoung]
+- [zioni78](https://github.com/zioni78)
+- [myjung300](https://github.com/myjung300)
+- [lee-jungyeon](https://github.com/lee-jungyeon)
+- [TIKITAK](https://github.com/JEONHYUNTAK)
 
 모든 분들의 기여를 환영합니다! 참여를 원하신다면 다음 방법을 이용해 주세요:
 - 버그 제보 또는 신규 기능 제안을 위한 이슈 등록
