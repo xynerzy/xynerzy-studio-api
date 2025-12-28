@@ -9,6 +9,7 @@ package com.xynerzy.commons.llm;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.json.JSONObject;
@@ -28,7 +29,8 @@ public class LLMApiOpenAI implements LLMApiBase {
   private final LLMProperties props;
   private final WebClient.Builder webClientBuilder;
 
-  @Override public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  @Override public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+    LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     LLMProperties openAIProps = props;
 
     /* Set the connection timeout to 5 seconds. */
@@ -67,6 +69,7 @@ public class LLMApiOpenAI implements LLMApiBase {
           data = line;
         } else if ("[DONE]".equals(line)) {
           onNext.accept("\0\0");
+          ret.add(Boolean.TRUE);
           return;
         }
         try {
@@ -80,11 +83,13 @@ public class LLMApiOpenAI implements LLMApiBase {
           }
         } catch (Exception e) {
           onNext.accept("\0\0");
+          ret.add(e);
           log.error("Error parsing stream data: {}", data, e);
         }
       })
       .doOnComplete(onComplete)
       .doOnError(onError)
       .subscribe();
+    return ret;
   }
 }

@@ -8,6 +8,7 @@
 package com.xynerzy.commons.llm;
 
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.springframework.stereotype.Component;
@@ -27,7 +28,8 @@ public class LLMApiGemini implements LLMApiBase {
   private final WebClient.Builder webClientBuilder;
 
   @Override
-  public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+    LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     String baseUrl = props.getBaseUrl();
     String template = props.getApiTemplate();
     if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
@@ -51,9 +53,16 @@ public class LLMApiGemini implements LLMApiBase {
           onNext.accept(text);
         }
       })
-      .doOnComplete(onComplete)
-      .doOnError(onError)
+      .doOnComplete(() -> {
+        onComplete.run();
+        ret.add(Boolean.TRUE);
+      })
+      .doOnError(e -> {
+        onError.accept(e);
+        ret.add(e);
+      })
       .subscribe();
+    return ret;
   }
 
   private GeminiRequest createGeminiRequest(String request) {

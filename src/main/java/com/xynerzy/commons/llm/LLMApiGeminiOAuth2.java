@@ -9,6 +9,7 @@ package com.xynerzy.commons.llm;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.springframework.http.HttpHeaders;
@@ -31,11 +32,12 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
   private final WebClient.Builder webClientBuilder;
 
   @Override
-  public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    streamChatWithOauth2(request, onNext, onComplete, onError);
+  public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+    return streamChatWithOauth2(request, onNext, onComplete, onError);
   }
 
-  private void streamChatWithOauth2(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  private LinkedBlockingQueue<Object> streamChatWithOauth2(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+    LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     try {
       /* 1. Issue an access token using a refresh token */
       String baseUrl = props.getBaseUrl();
@@ -65,14 +67,21 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
         .retrieve()
         .bodyToFlux(GeminiResponse.class)
         .doOnNext(response -> onNext.accept(response.extractText()))
-        .doOnComplete(onComplete)
-        .doOnError(onError)
+        .doOnComplete(() -> {
+          onComplete.run();
+          ret.add(Boolean.TRUE);
+        })
+        .doOnError(e -> {
+          onError.accept(e);
+          ret.add(e);
+        })
         .subscribe();
 
     } catch (IOException e) {
       log.error("Failed to refresh access token", e);
       onError.accept(e);
     }
+    return ret;
   }
 
   private GeminiRequest createGeminiRequest(String request) {

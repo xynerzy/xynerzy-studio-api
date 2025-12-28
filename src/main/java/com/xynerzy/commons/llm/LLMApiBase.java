@@ -7,10 +7,11 @@
  **/
 package com.xynerzy.commons.llm;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 /* LLM API Base Interface */
 public interface LLMApiBase {
   /* Process streaming messages */
-  default void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) { }
+  default LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) { return null; }
 }

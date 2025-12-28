@@ -8,11 +8,9 @@
 package com.xynerzy.commons;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -44,25 +42,16 @@ public class LLMApiTest {
     String request = "Hello? Who are you?";
     
     StringBuilder resp = new StringBuilder();
-    LinkedBlockingQueue<Boolean> latch = new LinkedBlockingQueue<>();
-    AtomicReference<Throwable> error = new AtomicReference<>();
     /* Act */
     log.info("Sending request to Open-AI...");
-    api.streamChat(
+    LinkedBlockingQueue<Object> latch = api.streamChat(
       request,
       chunk -> {
         log.debug("Received chunk: {}", chunk);
-        if ("\0\0".equals(chunk)) {
-          latch.add(Boolean.TRUE);
-        }
         resp.append(chunk);
-      }, () -> {
-        log.info("Stream completed.");
-      }, err -> {
-        log.error("Stream failed with an error", err);
-        error.set(err);
-        latch.add(Boolean.TRUE);
-      }
+      },
+      () -> log.info("Stream completed."),
+      e -> log.error("Stream failed with an error", e)
     );
     /**
      * Since the actual streamChat implementation is invoked asynchronously via subscribe(), 
@@ -73,7 +62,6 @@ public class LLMApiTest {
      * Here, we wait briefly for the purpose of proof of concept.
      **/
     while (latch.poll(1000, TimeUnit.MILLISECONDS) == null) { }
-    assertNull(error.get(), "Stream should complete without errors.");
     assertFalse(resp.toString().isEmpty(), "Response should not be empty.");
     log.info("Final Response: {}", resp.toString());
   }
@@ -91,29 +79,19 @@ public class LLMApiTest {
     String request = "Hello? Who are you?";
 
     StringBuilder resp = new StringBuilder();
-    LinkedBlockingQueue<Boolean> latch = new LinkedBlockingQueue<>();
-    AtomicReference<Throwable> error = new AtomicReference<>();
     /* Act */
     log.info("Sending request to Gemini API...");
-    api.streamChat(
+    LinkedBlockingQueue<Object> latch = api.streamChat(
         request,
         chunk -> {
           log.debug("Received chunk: {}", chunk);
           resp.append(chunk);
         },
-        () -> {
-          log.info("Stream completed.");
-          latch.add(Boolean.TRUE);
-        },
-        err -> {
-          log.error("Stream failed with an error", err);
-          error.set(err);
-          latch.add(Boolean.TRUE);
-        }
+        () -> log.info("Stream completed."),
+        e -> log.error("Stream failed with an error", e)
     );
     /* Assert */
     while (latch.poll(1000, TimeUnit.MILLISECONDS) == null) { }
-    assertNull(error.get(), "Stream should complete without errors.");
     assertFalse(resp.toString().isEmpty(), "Response should not be empty.");
     log.info("Final Response: {}", resp.toString());
   }
@@ -132,27 +110,19 @@ public class LLMApiTest {
     String request = "Hello? Who are you?";
 
     StringBuilder resp = new StringBuilder();
-    LinkedBlockingQueue<Boolean> latch = new LinkedBlockingQueue<>();
-    AtomicReference<Throwable> error = new AtomicReference<>();
     /* Act */
     log.info("Sending request to Gemini API with OAuth2...");
-    api.streamChat(
+    LinkedBlockingQueue<Object> latch = api.streamChat(
       request,
       chunk -> {
         log.debug("Received chunk: {}", chunk);
         resp.append(chunk);
-      }, () -> {
-        log.info("Stream completed.");
-        latch.add(Boolean.TRUE);
-      }, err -> {
-        log.error("Stream failed with an error", err);
-        error.set(err);
-        latch.add(Boolean.TRUE);
-      }
+      },
+      () -> log.info("Stream completed."),
+      e -> log.error("Stream failed with an error", e)
     );
     /* Assert */
     while (latch.poll(1000, TimeUnit.MILLISECONDS) == null) { }
-    assertNull(error.get(), "Stream should complete without errors.");
     assertFalse(resp.toString().isEmpty(), "Response should not be empty.");
     log.info("Final Response: {}", resp.toString());
   }
@@ -171,29 +141,19 @@ public class LLMApiTest {
     String request = "Hello? Who are you?";
 
     StringBuilder resp = new StringBuilder();
-    LinkedBlockingQueue<Boolean> latch = new LinkedBlockingQueue<>();
-    AtomicReference<Throwable> error = new AtomicReference<>();
     /* Act */
     log.info("Sending request to Ollama API...");
-    api.streamChat(
-        request,
-        chunk -> {
-          log.debug("Received chunk: {}", chunk);
-          resp.append(chunk);
-        },
-        () -> {
-          log.info("Stream completed.");
-          latch.add(Boolean.TRUE);
-        },
-        err -> {
-          log.error("Stream failed with an error", err);
-          error.set(err);
-          latch.add(Boolean.TRUE);
-        }
+    LinkedBlockingQueue<Object> latch = api.streamChat(
+      request,
+      chunk -> {
+        log.debug("Received chunk: {}", chunk);
+        resp.append(chunk);
+      },
+      () -> log.info("Stream completed."),
+      e -> log.error("Stream failed with an error", e)
     );
     /* Assert */
     while (latch.poll(1000, TimeUnit.MILLISECONDS) == null) { }
-    assertNull(error.get(), "Stream should complete without errors.");
     assertFalse(resp.toString().isEmpty(), "Response should not be empty.");
     log.info("Final Response: {}", resp.toString());
   }

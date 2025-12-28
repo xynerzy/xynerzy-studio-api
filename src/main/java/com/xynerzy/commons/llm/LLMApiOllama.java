@@ -7,6 +7,7 @@
  **/
 package com.xynerzy.commons.llm;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.springframework.stereotype.Component;
@@ -33,7 +34,8 @@ public class LLMApiOllama implements LLMApiBase {
   }
 
   @Override
-  public void streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+    LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     OllamaRequest ollamaRequest = new OllamaRequest(props.getModel(), request, true);
 
     webClient.post()
@@ -55,9 +57,16 @@ public class LLMApiOllama implements LLMApiBase {
             onNext.accept(response.getResponse());
           }
         },
-        onError,
-        onComplete
+        e -> {
+          onError.accept(e);
+          ret.add(e);
+        },
+        () -> {
+          onComplete.run();
+          ret.add(Boolean.TRUE);
+        }
       );
+    return ret;
   }
 
   @Data @AllArgsConstructor
