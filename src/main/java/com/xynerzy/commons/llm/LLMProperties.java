@@ -14,7 +14,7 @@ public class LLMProperties {
   private String baseUrl;
   private String model;
   private String apiKey;
-  private String apiTemplate;
+  private String uriTemplate;
   private String clientId;
   private String clientSecret;
   private String refreshToken;

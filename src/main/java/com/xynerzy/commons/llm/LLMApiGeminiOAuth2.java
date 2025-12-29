@@ -8,7 +8,6 @@
 package com.xynerzy.commons.llm;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
@@ -41,7 +40,7 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
     try {
       /* 1. Issue an access token using a refresh token */
       String baseUrl = props.getBaseUrl();
-      String template = props.getApiTemplate();
+      String template = props.getUriTemplate();
       if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
       if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
       String accessToken = new GoogleRefreshTokenRequest(
@@ -58,7 +57,7 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
         .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
         .build();
 
-      GeminiRequest geminiRequest = createGeminiRequest(request);
+      GeminiRequest geminiRequest = LLMApiGemini.createGeminiRequest(request);
 
       final String TEMPLATE = template;
       webClient.post()
@@ -82,11 +81,5 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
       onError.accept(e);
     }
     return ret;
-  }
-
-  private GeminiRequest createGeminiRequest(String request) {
-    GeminiRequest.Part part = new GeminiRequest.Part(request);
-    GeminiRequest.Content content = new GeminiRequest.Content(List.of(part));
-    return new GeminiRequest(List.of(content));
   }
 }

@@ -69,6 +69,7 @@ public class LLMApiOpenAI implements LLMApiBase {
           data = line;
         } else if ("[DONE]".equals(line)) {
           onNext.accept("\0\0");
+          onComplete.run();
           ret.add(Boolean.TRUE);
           return;
         }

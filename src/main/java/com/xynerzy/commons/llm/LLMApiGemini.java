@@ -31,7 +31,7 @@ public class LLMApiGemini implements LLMApiBase {
   public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     String baseUrl = props.getBaseUrl();
-    String template = props.getApiTemplate();
+    String template = props.getUriTemplate();
     if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
     if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
 
@@ -65,7 +65,7 @@ public class LLMApiGemini implements LLMApiBase {
     return ret;
   }
 
-  private GeminiRequest createGeminiRequest(String request) {
+  public static GeminiRequest createGeminiRequest(String request) {
     GeminiRequest.Part part = new GeminiRequest.Part(request);
     GeminiRequest.Content content = new GeminiRequest.Content(List.of(part));
     return new GeminiRequest(List.of(content));
