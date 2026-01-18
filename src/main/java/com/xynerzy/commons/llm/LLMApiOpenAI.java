@@ -16,14 +16,13 @@ import org.json.JSONObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.netty.http.client.HttpClient;
 
-@Slf4j @Component("openAIChatApi") @RequiredArgsConstructor
+@Slf4j @RequiredArgsConstructor
 public class LLMApiOpenAI implements LLMApiBase {
 
   private final LLMProperties props;

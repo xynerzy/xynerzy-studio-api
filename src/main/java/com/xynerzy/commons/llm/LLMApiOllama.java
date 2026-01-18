@@ -10,7 +10,6 @@ package com.xynerzy.commons.llm;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -19,9 +18,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j @Component("ollamaChatApi")
+@Slf4j @RequiredArgsConstructor
 public class LLMApiOllama implements LLMApiBase {
 
   private final LLMProperties props;

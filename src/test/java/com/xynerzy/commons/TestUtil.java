@@ -30,6 +30,7 @@ public class TestUtil {
     String enabled = "";
     try {
       enabled = System.getProperty("project.build.test");
+      log.info("CHECK:[{}]", enabled);
       if (enabled == null || "".equals(enabled)) { enabled = TestLevel.SIMPLE.name(); }
       TestLevel target = TestLevel.valueOf(enabled);
       if (target.value() >= lvl.value()) { ret = true; }

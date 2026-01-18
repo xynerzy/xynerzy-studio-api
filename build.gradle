@@ -41,8 +41,8 @@ repositories {
 configurations {
   all {
     /* only junit 5 should be used */
-    exclude group: 'junit', module: 'junit'
-    exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    // exclude group: 'junit', module: 'junit'
+    // exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
   }
 }
 
@@ -119,8 +119,12 @@ dependencies {
   testAnnotationProcessor 'org.projectlombok:lombok'
 
   /* JUnit 5 Jupiter API */
-  testImplementation 'org.junit.jupiter:junit-jupiter-api'
-  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+  testImplementation platform("org.junit:junit-bom:5.10.1")
+  testImplementation "org.junit.jupiter:junit-jupiter"
+  testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+  // testImplementation 'org.junit.jupiter:junit-jupiter-api'
+  // testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+  testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 tasks.named('test') {
