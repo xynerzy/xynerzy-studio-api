@@ -12,6 +12,7 @@ import java.util.Map;
 import com.xynerzy.system.runtime.AppException;
 
 public interface MainService {
+  default void ping() throws AppException { }
   default Object main() throws AppException { return null; }
   default Object subscribe(String topic) throws AppException { return null; }
   default Object publish(String topic, Map<String,Object> prm) throws AppException { return null; }

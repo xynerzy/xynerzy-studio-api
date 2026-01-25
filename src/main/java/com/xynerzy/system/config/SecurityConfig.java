@@ -9,6 +9,7 @@ package com.xynerzy.system.config;
 
 import static com.xynerzy.commons.DataUtil.list;
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.HEAD;
 import static org.springframework.http.HttpMethod.POST;
 
 import java.io.IOException;
@@ -74,6 +75,7 @@ public class SecurityConfig {
     reqMbrLst.addAll(list());
     reqWebLst.addAll(list());
 
+
     reqPubLst.addAll(List.of(
       matcher(GET, "/"),
       matcher(GET, "/index.html"),
@@ -81,6 +83,7 @@ public class SecurityConfig {
       matcher(GET, "/main"),
       matcher(GET, "/error"),
       matcher(GET, "/files/**"),
+      matcher(HEAD, "/api/**"),
       matcher(GET, "/api/**"),
       matcher(POST, "/api/**"),
       /* H2DB web console */
