@@ -1,29 +1,29 @@
 /**
- * @File        : MemberEntity.java
+ * @File        : ChatSessionEntity.java
  * @Author      : lupfeliz@gmail.com
  * @Since       : 2026-01-25
- * @Description : Member Entity
+ * @Description : ChatSession Entity
  * @Site        : https://github.com/xynerzy
  **/
-package com.xynerzy.member.control;
+package com.xynerzy.chatSession.control;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.xynerzy.member.service.MemberService;
+import com.xynerzy.chatSession.service.ChatSessionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @RestController @RequiredArgsConstructor
-@RequestMapping("/api/member")
-public class MemberApiControl {
+@RequestMapping("/api/chat-session")
+public class ChatSessionApiControl {
 
-  private final MemberService memberService;
+  private final ChatSessionService chatSessionService;
   
   @PostMapping(path = "list")
-  public Object memberList() {
-    return memberService.memberList();
+  public Object chatSessionList() {
+    return chatSessionService.chatSessionList();
   }
 }
