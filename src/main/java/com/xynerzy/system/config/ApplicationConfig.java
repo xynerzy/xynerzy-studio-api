@@ -7,21 +7,34 @@
  **/
 package com.xynerzy.system.config;
 
+import static com.xynerzy.commons.Constants.AUTHORIZATION;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.lang.NonNull;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.models.Components;
@@ -30,8 +43,9 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import lombok.extern.slf4j.Slf4j;
 
-@Configuration
+@Slf4j @Configuration
 public class ApplicationConfig {
 
   public static final String SECURITY_SCHEME_NAME = "bearerAuth";
@@ -40,7 +54,7 @@ public class ApplicationConfig {
   public static class AspectConfig {
   }
 
-  @Configuration @OpenAPIDefinition 
+  @Configuration @OpenAPIDefinition
   public class OpenAPIConfig {
     @Value("${springdoc.server.url:/}") private String svurl;
     @Value("${springdoc.server.description:Default URL}") private String description;
@@ -84,9 +98,41 @@ public class ApplicationConfig {
       /* SockJS connection address : ws://localhost:8080/api/ws */
       registry.addEndpoint("/api/ws")
         .setAllowedOriginPatterns("*")
+        .addInterceptors(new HandshakeInterceptor() {
+          @Override public boolean beforeHandshake(ServerHttpRequest req, ServerHttpResponse res,
+            WebSocketHandler hnd, Map<String, Object> atr) throws Exception {
+            log.debug("BEFORE-HANDSHAKE..{} / {} / {} / {}", req.getURI(), req.getHeaders(), hnd, atr);
+            return true;
+          }
+          @Override public void afterHandshake(ServerHttpRequest req, ServerHttpResponse res,
+            WebSocketHandler hnd, Exception ex) {
+            log.debug("AFTER-HANDSHAKE..{} / {} / {}", req.getAttributes(), hnd);
+          }
+        })
         /* compatibility */
         .withSockJS()
-        .setSuppressCors(true);
+        .setHeartbeatTime(1000);
+    }
+    @Override public void configureClientInboundChannel(@NonNull ChannelRegistration reg) {
+      reg.interceptors(new ChannelInterceptor() {
+        @Override public Message<?> preSend(@NonNull Message<?> msg, @NonNull MessageChannel chn) {
+          StompHeaderAccessor acc = StompHeaderAccessor.wrap(msg);
+          log.debug("CHECK:{}", acc);
+          if (StompCommand.CONNECT.equals(acc.getCommand())) {
+            Map<String, Object> atr = acc.getSessionAttributes();
+            String auth = acc.getFirstNativeHeader(AUTHORIZATION);
+            // String userId = cast(acc.getFirstNativeHeader(X_USER_ID), "");
+            log.debug("AUTH:{} / {}", auth, atr);
+            if (atr != null) {
+              // atr.put(AUTHORIZATION, auth);
+              atr.putAll(Map.of(
+                // "userId", userId
+              ));
+            }
+          }
+          return msg;
+        }
+      });
     }
   }
 

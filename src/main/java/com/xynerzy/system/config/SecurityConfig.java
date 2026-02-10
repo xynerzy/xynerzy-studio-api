@@ -109,6 +109,7 @@ public class SecurityConfig {
     http
       /* Cross-Site Request Forgery */ 
       .csrf(csrf -> csrf.disable())
+      // .csrf(csrf -> csrf.ignoringRequestMatchers("/api/ws/**"))
       /* Filter */
       .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
       .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
@@ -135,14 +136,14 @@ public class SecurityConfig {
       /* Check Auth per URI */
       .authorizeHttpRequests(req -> req
         /* Allow for All */
-        .requestMatchers(reqPub).permitAll()
+        // .requestMatchers(reqPub).permitAll()
         /* Allow for Authroized User */
-        .requestMatchers(reqMbr).hasAnyAuthority("ROLE_USER")
+        // .requestMatchers(reqMbr).hasAnyAuthority("ROLE_USER")
         /* Web Resource */
-        .requestMatchers(reqWeb).permitAll()
+        // .requestMatchers(reqWeb).permitAll()
         .anyRequest()
-          // .permitAll()
-          .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+          .permitAll()
+          // .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
       )
       /* Disable Form login */
       .formLogin(login -> login.disable())

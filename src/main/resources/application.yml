@@ -46,8 +46,8 @@ logging:
   level:
     root: "INFO"
     jdbc: "INFO"
-    woori-sys: "INFO"
-    woori-work: "INFO"
+    # org.springframework.web.socket: TRACE
+    # org.springframework.messaging: TRACE
 
 ## project specific settings
 system:
