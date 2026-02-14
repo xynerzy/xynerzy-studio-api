@@ -8,7 +8,11 @@
 package com.xynerzy.chatSession.service;
 
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.chatSession.entity.ChatSessionEntity.ChatSession;
@@ -35,5 +39,43 @@ public class ChatSessionServiceImpl implements ChatSessionService {
         .unread(0)
       .build()
     );
+  }
+  @Override public void chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+    log.debug("RECEIVE-CHAT:{}", msg.getPayload());
+    log.debug("MESSAGE:{} / {} / {}", acc.getSessionId(), msg, hdr);
+    // String roomId = cast(acc.getFirstNativeHeader("x-chatsession-id"), "");
+    String userId = null;
+    Map<String, Object> atr = acc.getSessionAttributes();
+    log.debug("SESSION:{} / {}", userId, atr);
+    // if (atr != null) {
+    //   userId = cast(atr.get("userId"), "");
+    // }
+    // Date cdate = new Date();
+    // ChatEntity dto = msg.getPayload();
+    // if (roomId != null) {
+    //   String topic = cat(CHAT, ".", roomId);
+    //   /** 채팅방이 없는경우 생성한다. */
+    //   if (!chatroomRepo.existsByRoomId(roomId)) {
+    //     chatroomRepo.save(ChatRoomEntity.builder()
+    //       .roomId(roomId)
+    //       .ctime(cdate)
+    //       .utime(cdate)
+    //       .build());
+    //   }
+    //   /** TODO: 채팅 메시지 act 를 구분할것 (입장, 퇴장, 키보드입력, 메시지전송 등) */
+    //   if (!"".equals(dto.getMessage())) {
+    //     dto.setSid(acc.getSessionId());
+    //     dto.setUserId(userId);
+    //     dto.setTopic(topic);
+    //     dto.setPartition(0);
+    //     dto.setChatId(ChatId.builder()
+    //       .roomId(roomId)
+    //       .build());
+    //     dto.setKey(CHAT);
+    //     dto.setSvr(core.getServerId());
+    //     kafkaService.sendChatMessage(dto);
+    //     log.debug("KAFKA-SENDED:{}", dto);
+    //   }
+    // }
   }
 }

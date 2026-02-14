@@ -9,6 +9,8 @@ package com.xynerzy.message.service;
 
 import java.util.List;
 
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.message.entity.MessageEntity.Message;
@@ -41,5 +43,9 @@ public class MessageServiceImpl implements MessageService {
         .unread(1)
       .build()
     );
+  }
+
+  @Override public void messageList(org.springframework.messaging.Message<Message> msg, MessageHeaders hdr,
+      StompHeaderAccessor acc) {
   }
 }
