@@ -30,19 +30,6 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     log.trace("INIT:{}", ChatSessionService.class);
   }
 
-  // @Override public List<ChatSession> chatSessionList() {
-  //   return List.of(
-  //     ChatSession.builder()
-  //       .name("tester")
-  //       .intro("hello!")
-  //       .members(List.of("/images/test.svg"))
-  //       .active(true)
-  //       .online(true)
-  //       .updated("PM 01:10")
-  //       .unread(0)
-  //     .build()
-  //   );
-  // }
   @Override public List<ChatSession> chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
     List<ChatSession> ret = List.of(
       ChatSession.builder()
@@ -61,7 +48,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     // String userId = null;
     // Map<String, Object> atr = acc.getSessionAttributes();
     // log.debug("SESSION:{} / {}", userId, atr);
-    wsock.convertAndSend("/api/sub/session-data", ret);
+    if (wsock != null) { wsock.convertAndSend("/api/sub/session/1234", ret); }
     // if (atr != null) {
     //   userId = cast(atr.get("userId"), "");
     // }

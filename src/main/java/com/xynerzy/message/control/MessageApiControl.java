@@ -26,22 +26,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @RestController @RequiredArgsConstructor
-// @RequestMapping("/api/message")
 public class MessageApiControl {
 
   static final String CONTROLLER_TAG1 = "Chatting Message API"; 
   
   private final MessageService messageService;
-  
-  // @Operation(summary = "Chatting Message List", tags = { CONTROLLER_TAG1 })
-  // @PostMapping(path = "list")
-  // public List<MessageEntity.Message> messageList() {
-  //   return messageService.messageList();
-  // }
 
   @Operation(summary = "Chatting Message List", tags = { CONTROLLER_TAG1 })
-  @PostMapping(path = "/api/pub/talk/{sessionId}")
-  @MessageMapping("/talk/{sessionId}")
+  @PostMapping(path = "/api/pub/chat/{sessionId}")
+  @MessageMapping("/chat/{sessionId}")
   public void messageList(
     @PathVariable @DestinationVariable String sessionId,
     @Nullable Message<MessageEntity.Message> msg,

@@ -73,16 +73,16 @@ public class MainServiceImpl implements MainService {
       sid = sha.getSessionId();
       subscId = concat(sid, sha.getSubscriptionId());
     }
-    if (destination.startsWith("/api/sub/session-")) {
-      new Thread(() -> {
-        try { Thread.sleep(100); } catch (Exception ignore) { }
-        chatSessionService.chatSessionList(null, null, null);
-      }).start();
-    } else if (destination.startsWith("/api/sub/chat-")) {
-      new Thread(() -> {
-        try { Thread.sleep(100); } catch (Exception ignore) { }
-        messageService.messageList(null, null, null);
-      }) .start();
+    if (destination.startsWith("/api/sub/session/")) {
+      // new Thread(() -> {
+      //   try { Thread.sleep(100); } catch (Exception ignore) { }
+      //   chatSessionService.chatSessionList(null, null, null);
+      // }).start();
+    } else if (destination.startsWith("/api/sub/chat/")) {
+      // new Thread(() -> {
+      //   try { Thread.sleep(100); } catch (Exception ignore) { }
+      //   messageService.messageList(null, null, null);
+      // }) .start();
     }
     log.debug("SESSION:{} / {}", atr, sha);
   }

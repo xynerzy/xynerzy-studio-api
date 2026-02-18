@@ -29,26 +29,6 @@ public class MessageServiceImpl implements MessageService {
   @PostConstruct public void init() {
     log.trace("INIT:{}", MessageService.class);
   }
-  
-  // @Override public List<MessageEntity.Message> messageList() {
-  //   return List.of(
-  //     MessageEntity.Message.builder()
-  //       .type("my")
-  //       .content("Hi! whatsup!?")
-  //       .time("PM 01:10")
-  //       .userId("tester")
-  //       .unread(1)
-  //     .build(),
-  //     MessageEntity.Message.builder()
-  //       .type("their")
-  //       .content("Nothing special. How about you?")
-  //       .avatar("/images/test.svg")
-  //       .time("PM 01:10")
-  //       .userId("tester")
-  //       .unread(1)
-  //     .build()
-  //   );
-  // }
 
   @Override public List<MessageEntity.Message> messageList(Message<MessageEntity.Message> msg, MessageHeaders hdr,
       StompHeaderAccessor acc) {
@@ -69,7 +49,7 @@ public class MessageServiceImpl implements MessageService {
         .unread(1)
       .build()
     );
-    wsock.convertAndSend("/api/sub/chat-data", ret);
+    if (wsock != null) { wsock.convertAndSend("/api/sub/chat/5678", ret); }
     return ret;
   }
 }

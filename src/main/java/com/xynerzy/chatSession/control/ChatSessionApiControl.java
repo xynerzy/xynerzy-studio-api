@@ -26,28 +26,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @RestController @RequiredArgsConstructor
-// @RequestMapping("/api/chat-session")
 public class ChatSessionApiControl {
   
   static final String CONTROLLER_TAG1 = "Chatting Session  API"; 
 
   private final ChatSessionService chatSessionService;
 
-  // @Operation(summary = "Chatting Session List", tags = { CONTROLLER_TAG1 })
-  // @PostMapping(path = "list")
-  // public List<ChatSession> chatSessionList() {
-  //   return chatSessionService.chatSessionList();
-  // }
-  
   @Operation(summary = "Chatting Session List", tags = { CONTROLLER_TAG1 })
-  @PostMapping(path = "/api/pub/chat-session/{sessionId}")
-  @MessageMapping("/chat-session/{sessionId}")
+  @PostMapping(path = "/api/pub/session/{userId}")
+  @MessageMapping("/session/{userId}")
   public void chatSessionList(
-    @PathVariable @DestinationVariable String sessionId,
+    @PathVariable @DestinationVariable String userId,
     @Nullable Message<ChatSession> msg,
     @Null MessageHeaders hdr,
     @Nullable StompHeaderAccessor acc) throws Exception {
-    log.debug("chat-session:{} / {}", sessionId, msg);
-    // chatSessionService.chatSessionList(msg, hdr, acc);
+    log.debug("chat-session:{} / {}", userId, msg);
+    chatSessionService.chatSessionList(msg, hdr, acc);
   }
 }
