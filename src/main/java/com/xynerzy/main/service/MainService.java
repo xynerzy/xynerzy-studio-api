@@ -9,8 +9,6 @@ package com.xynerzy.main.service;
 
 import java.util.Map;
 
-import org.springframework.web.socket.messaging.SessionSubscribeEvent;
-
 import com.xynerzy.system.runtime.AppException;
 
 public interface MainService {
@@ -18,5 +16,4 @@ public interface MainService {
   default Object main() throws AppException { return null; }
   default Object subscribe(String topic) throws AppException { return null; }
   default Object publish(String topic, Map<String,Object> prm) throws AppException { return null; }
-  default void handleSubscribeEvent(SessionSubscribeEvent event) { }
 }

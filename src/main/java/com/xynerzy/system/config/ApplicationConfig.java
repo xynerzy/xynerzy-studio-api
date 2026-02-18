@@ -8,6 +8,12 @@
 package com.xynerzy.system.config;
 
 import static com.xynerzy.commons.Constants.AUTHORIZATION;
+import static com.xynerzy.commons.Constants.COOKIE;
+import static com.xynerzy.commons.Constants.PTH_API;
+import static com.xynerzy.commons.Constants.PTH_PUB;
+import static com.xynerzy.commons.Constants.PTH_SUB;
+import static com.xynerzy.commons.Constants.PTH_WS;
+import static com.xynerzy.commons.StringUtil.concat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.lang.NonNull;
@@ -34,6 +41,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -89,24 +97,24 @@ public class ApplicationConfig {
 
     @Override public void configureMessageBroker(@NonNull MessageBrokerRegistry registry) {
       /* from client to server */
-      registry.setApplicationDestinationPrefixes("/api/pub");
+      registry.setApplicationDestinationPrefixes(PTH_API + PTH_PUB);
       /* from server to client */
-      registry.enableSimpleBroker("/api/sub");
+      registry.enableSimpleBroker(PTH_API + PTH_SUB);
     }
 
     @Override public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
       /* SockJS connection address : ws://localhost:8080/api/ws */
-      registry.addEndpoint("/api/ws")
+      registry.addEndpoint(PTH_API + PTH_WS)
         .setAllowedOriginPatterns("*")
         .addInterceptors(new HandshakeInterceptor() {
           @Override public boolean beforeHandshake(ServerHttpRequest req, ServerHttpResponse res,
             WebSocketHandler hnd, Map<String, Object> atr) throws Exception {
-            log.debug("BEFORE-HANDSHAKE..{} / {} / {} / {}", req.getURI(), req.getHeaders(), hnd, atr);
+            log.debug("BEFORE-HANDSHAKE..{} / {} / {} / {} / {}", req.getURI(), req.getHeaders(), req.getHeaders().get(COOKIE), hnd, atr);
             return true;
           }
           @Override public void afterHandshake(ServerHttpRequest req, ServerHttpResponse res,
             WebSocketHandler hnd, Exception ex) {
-            log.debug("AFTER-HANDSHAKE..{} / {} / {}", req.getAttributes(), hnd);
+            log.debug("AFTER-HANDSHAKE..{} / {} / {} / {} / {}", req.getURI(), req.getHeaders(), req.getHeaders().get(COOKIE), hnd, req.getAttributes());
           }
         })
         /* compatibility */
@@ -133,6 +141,20 @@ public class ApplicationConfig {
           return msg;
         }
       });
+    }
+    @EventListener public void handleSubscribeEvent(SessionSubscribeEvent evt) {
+      StompHeaderAccessor sha = StompHeaderAccessor.wrap(evt.getMessage());
+      Map<String, Object> atr = sha.getSessionAttributes();
+      String dest = sha.getDestination();
+      String sid = "";
+      String sbscId = "";
+      String userId = "";
+      if (sha != null) {
+        sid = sha.getSessionId();
+        sbscId = concat(sid, sha.getSubscriptionId());
+      }
+      log.debug("DEST:{} / SUBSCRIBE-ID:{} / USER-ID:{}", dest, sbscId, userId);
+      log.debug("SESSION:{} / {} / {}", atr, sha);
     }
   }
 

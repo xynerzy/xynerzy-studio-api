@@ -9,7 +9,6 @@ package com.xynerzy.main.control;
 
 import java.util.Map;
 
-import org.springframework.context.event.EventListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 import com.xynerzy.main.service.MainService;
 import com.xynerzy.system.runtime.AppException;
@@ -74,8 +72,4 @@ public class MainApiControl {
     - /api/pub
     """)
   @PostMapping("/ws") public void sockJsDocOnly() { }
-
-  @EventListener public void handleSubscribeEvent(SessionSubscribeEvent event) throws Exception {
-    mainService.handleSubscribeEvent(event);
-  }
 }

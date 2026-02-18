@@ -7,7 +7,11 @@
  **/
 package com.xynerzy.chatSession.control;
 
-import org.springframework.lang.Nullable;
+import static com.xynerzy.commons.Constants.PTH_API;
+import static com.xynerzy.commons.Constants.PTH_PUB;
+
+import java.util.List;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -21,7 +25,7 @@ import com.xynerzy.chatSession.entity.ChatSessionEntity.ChatSession;
 import com.xynerzy.chatSession.service.ChatSessionService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.constraints.Null;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,14 +37,14 @@ public class ChatSessionApiControl {
   private final ChatSessionService chatSessionService;
 
   @Operation(summary = "Chatting Session List", tags = { CONTROLLER_TAG1 })
-  @PostMapping(path = "/api/pub/session/{userId}")
+  @PostMapping(path = PTH_API + PTH_PUB + "/session/{userId}")
   @MessageMapping("/session/{userId}")
-  public void chatSessionList(
+  public List<ChatSession> chatSessionList(
     @PathVariable @DestinationVariable String userId,
-    @Nullable Message<ChatSession> msg,
-    @Null MessageHeaders hdr,
-    @Nullable StompHeaderAccessor acc) throws Exception {
+    @Parameter(hidden = true) Message<ChatSession> msg,
+    @Parameter(hidden = true) MessageHeaders hdr,
+    @Parameter(hidden = true) StompHeaderAccessor acc) throws Exception {
     log.debug("chat-session:{} / {}", userId, msg);
-    chatSessionService.chatSessionList(msg, hdr, acc);
+    return chatSessionService.chatSessionList(msg, hdr, acc);
   }
 }
