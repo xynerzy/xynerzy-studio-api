@@ -8,27 +8,43 @@
 package com.xynerzy.chatSession.service;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.chatSession.entity.ChatSessionEntity.ChatSession;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j @Service
+@Slf4j @Service @RequiredArgsConstructor
 public class ChatSessionServiceImpl implements ChatSessionService {
+  
+  private final SimpMessagingTemplate wsock;
 
   @PostConstruct public void init() {
     log.trace("INIT:{}", ChatSessionService.class);
   }
 
-  @Override public List<ChatSession> chatSessionList() {
-    return List.of(
+  // @Override public List<ChatSession> chatSessionList() {
+  //   return List.of(
+  //     ChatSession.builder()
+  //       .name("tester")
+  //       .intro("hello!")
+  //       .members(List.of("/images/test.svg"))
+  //       .active(true)
+  //       .online(true)
+  //       .updated("PM 01:10")
+  //       .unread(0)
+  //     .build()
+  //   );
+  // }
+  @Override public List<ChatSession> chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+    List<ChatSession> ret = List.of(
       ChatSession.builder()
         .name("tester")
         .intro("hello!")
@@ -39,14 +55,13 @@ public class ChatSessionServiceImpl implements ChatSessionService {
         .unread(0)
       .build()
     );
-  }
-  @Override public void chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
-    log.debug("RECEIVE-CHAT:{}", msg.getPayload());
-    log.debug("MESSAGE:{} / {} / {}", acc.getSessionId(), msg, hdr);
+    // log.debug("RECEIVE-CHAT:{}", msg.getPayload());
+    // log.debug("MESSAGE:{} / {} / {}", acc.getSessionId(), msg, hdr);
     // String roomId = cast(acc.getFirstNativeHeader("x-chatsession-id"), "");
-    String userId = null;
-    Map<String, Object> atr = acc.getSessionAttributes();
-    log.debug("SESSION:{} / {}", userId, atr);
+    // String userId = null;
+    // Map<String, Object> atr = acc.getSessionAttributes();
+    // log.debug("SESSION:{} / {}", userId, atr);
+    wsock.convertAndSend("/api/sub/session-data", ret);
     // if (atr != null) {
     //   userId = cast(atr.get("userId"), "");
     // }
@@ -77,5 +92,6 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     //     log.debug("KAFKA-SENDED:{}", dto);
     //   }
     // }
+    return ret;
   }
 }

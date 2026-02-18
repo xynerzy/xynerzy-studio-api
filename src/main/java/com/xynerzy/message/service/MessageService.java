@@ -15,7 +15,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import com.xynerzy.message.entity.MessageEntity;
 
 public interface MessageService {
-  default List<MessageEntity.Message> messageList() { return null; }
-
-  void messageList(org.springframework.messaging.Message<MessageEntity.Message> msg, MessageHeaders hdr, StompHeaderAccessor acc);;
+  default List<MessageEntity.Message> messageList(
+    org.springframework.messaging.Message<MessageEntity.Message> msg,
+    MessageHeaders hdr, StompHeaderAccessor acc) { return null; }
 }

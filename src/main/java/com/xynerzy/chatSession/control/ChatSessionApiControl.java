@@ -48,6 +48,6 @@ public class ChatSessionApiControl {
     @Null MessageHeaders hdr,
     @Nullable StompHeaderAccessor acc) throws Exception {
     log.debug("chat-session:{} / {}", sessionId, msg);
-    chatSessionService.chatSessionList(msg, hdr, acc);
+    // chatSessionService.chatSessionList(msg, hdr, acc);
   }
 }

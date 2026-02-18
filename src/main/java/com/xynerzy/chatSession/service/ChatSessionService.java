@@ -16,6 +16,5 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import com.xynerzy.chatSession.entity.ChatSessionEntity.ChatSession;
 
 public interface ChatSessionService {
-  default List<ChatSession> chatSessionList() { return null; }
-  default void chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) { }
+  default List<ChatSession> chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) { return null; }
 }
