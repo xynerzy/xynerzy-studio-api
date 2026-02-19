@@ -7,7 +7,11 @@
  **/
 package com.xynerzy.message.service;
 
+import static com.xynerzy.commons.ReflectionUtil.cast;
+import static com.xynerzy.commons.StringUtil.concat;
+
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
@@ -30,8 +34,9 @@ public class MessageServiceImpl implements MessageService {
     log.trace("INIT:{}", MessageService.class);
   }
 
-  @Override public List<MessageEntity.Message> messageList(Message<MessageEntity.Message> msg, MessageHeaders hdr,
-      StompHeaderAccessor acc) {
+  @Override public List<MessageEntity.Message> messageList(Message<MessageEntity.Message> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+    Map<String, Object> attr = acc.getSessionAttributes();
+    String sessionId = cast( attr.get("sessionId"), "");
     List<MessageEntity.Message> ret = List.of(
       MessageEntity.Message.builder()
         .type("my")
@@ -49,7 +54,7 @@ public class MessageServiceImpl implements MessageService {
         .unread(1)
       .build()
     );
-    if (wsock != null) { wsock.convertAndSend("/api/sub/chat/5678", ret); }
+    if (wsock != null) { wsock.convertAndSend(concat("/api/sub/chat/", sessionId), ret); }
     return ret;
   }
 }

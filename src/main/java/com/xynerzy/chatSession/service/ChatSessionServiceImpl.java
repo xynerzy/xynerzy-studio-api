@@ -7,7 +7,11 @@
  **/
 package com.xynerzy.chatSession.service;
 
+import static com.xynerzy.commons.ReflectionUtil.cast;
+import static com.xynerzy.commons.StringUtil.concat;
+
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
@@ -31,6 +35,8 @@ public class ChatSessionServiceImpl implements ChatSessionService {
   }
 
   @Override public List<ChatSession> chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+    Map<String, Object> attr = acc.getSessionAttributes();
+    String userId = cast(attr.get("userId"), "");
     List<ChatSession> ret = List.of(
       ChatSession.builder()
         .name("tester")
@@ -48,7 +54,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     // String userId = null;
     // Map<String, Object> atr = acc.getSessionAttributes();
     // log.debug("SESSION:{} / {}", userId, atr);
-    if (wsock != null) { wsock.convertAndSend("/api/sub/session/1234", ret); }
+    if (wsock != null) { wsock.convertAndSend(concat("/api/sub/session/", userId), ret); }
     // if (atr != null) {
     //   userId = cast(atr.get("userId"), "");
     // }
