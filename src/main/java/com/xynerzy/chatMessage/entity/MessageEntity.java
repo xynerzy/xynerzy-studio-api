@@ -5,7 +5,7 @@
  * @Description : Message Entity
  * @Site        : https://github.com/xynerzy
  **/
-package com.xynerzy.message.entity;
+package com.xynerzy.chatMessage.entity;
 
 import lombok.Builder;
 import lombok.Data;

@@ -5,7 +5,7 @@
  * @Description : Message Entity
  * @Site        : https://github.com/xynerzy
  **/
-package com.xynerzy.message.control;
+package com.xynerzy.chatMessage.control;
 
 import static com.xynerzy.commons.Constants.PTH_API;
 import static com.xynerzy.commons.Constants.PTH_PUB;
@@ -22,9 +22,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.xynerzy.chatMessage.entity.MessageEntity;
+import com.xynerzy.chatMessage.service.MessageService;
 import com.xynerzy.main.entity.MainEntity;
-import com.xynerzy.message.entity.MessageEntity;
-import com.xynerzy.message.service.MessageService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

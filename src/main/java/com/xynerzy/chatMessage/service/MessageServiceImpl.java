@@ -5,7 +5,7 @@
  * @Description : Implementation of Message Service 
  * @Site        : https://github.com/xynerzy
  **/
-package com.xynerzy.message.service;
+package com.xynerzy.chatMessage.service;
 
 import static com.xynerzy.commons.ReflectionUtil.cast;
 import static com.xynerzy.commons.StringUtil.concat;
@@ -19,8 +19,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
+import com.xynerzy.chatMessage.entity.MessageEntity;
 import com.xynerzy.main.entity.MainEntity;
-import com.xynerzy.message.entity.MessageEntity;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
