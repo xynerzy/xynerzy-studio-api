@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.xynerzy.chatMessage.entity.MessageEntity;
+import com.xynerzy.chatMessage.entity.ChatMessageEntity;
 import com.xynerzy.chatMessage.service.MessageService;
 import com.xynerzy.main.entity.MainEntity;
 
@@ -43,7 +43,7 @@ public class MessageApiControl {
   @MessageMapping("/chat/{topic}")
   public MainEntity.Result sendChatMessages(
     @PathVariable @DestinationVariable String topic,
-    @Parameter(hidden = true) Message<MessageEntity.Message> msg,
+    @Parameter(hidden = true) Message<ChatMessageEntity.Message> msg,
     @Parameter(hidden = true) MessageHeaders hdr,
     @Parameter(hidden = true) StompHeaderAccessor acc) throws Exception {
     log.debug("receive-chat:{} / {}", topic, msg);
@@ -52,7 +52,7 @@ public class MessageApiControl {
   
   @Operation(summary = "Receive Chatting Messages", tags = { CONTROLLER_TAG1 })
   @PostMapping(path = PTH_API + PTH_SUB + "/chat/{topic}")
-  public List<MessageEntity.Message> receiveMessages(
+  public List<ChatMessageEntity.Message> receiveMessages(
     @PathVariable String topic) throws Exception {
     return messageService.receiveMessages(topic, null);
   }

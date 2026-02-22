@@ -10,7 +10,7 @@ package com.xynerzy.chatMessage.entity;
 import lombok.Builder;
 import lombok.Data;
 
-public class MessageEntity {
+public class ChatMessageEntity {
   @Builder @Data
   public static class Message {
     private String type;
