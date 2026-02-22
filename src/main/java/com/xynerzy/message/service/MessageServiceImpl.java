@@ -19,6 +19,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
+import com.xynerzy.main.entity.MainEntity;
 import com.xynerzy.message.entity.MessageEntity;
 
 import jakarta.annotation.PostConstruct;
@@ -34,7 +35,7 @@ public class MessageServiceImpl implements MessageService {
     log.trace("INIT:{}", MessageService.class);
   }
 
-  @Override public List<MessageEntity.Message> messageList(Message<MessageEntity.Message> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+  @Override public MainEntity.Result sendChatMessages(Message<MessageEntity.Message> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
     Map<String, Object> attr = acc.getSessionAttributes();
     String sessionId = cast( attr.get("sessionId"), "");
     List<MessageEntity.Message> ret = List.of(
@@ -54,7 +55,12 @@ public class MessageServiceImpl implements MessageService {
         .unread(1)
       .build()
     );
-    if (wsock != null) { wsock.convertAndSend(concat("/api/sub/chat/", sessionId), ret); }
-    return ret;
+    receiveMessages(concat("/api/sub/chat/", sessionId), ret);
+    return MainEntity.Result.builder().build();
+  }
+
+  @Override  public List<MessageEntity.Message> receiveMessages(String topic, List<MessageEntity.Message> list) {
+    if (wsock != null) { wsock.convertAndSend(topic, list); }
+    return list;
   }
 }

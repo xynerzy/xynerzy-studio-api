@@ -20,6 +20,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.chatSession.entity.ChatSessionEntity.ChatSession;
+import com.xynerzy.main.entity.MainEntity;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     log.trace("INIT:{}", ChatSessionService.class);
   }
 
-  @Override public List<ChatSession> chatSessionList(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+  @Override public MainEntity.Result sendSessionMessages(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
     Map<String, Object> attr = acc.getSessionAttributes();
     String userId = cast(attr.get("userId"), "");
     List<ChatSession> ret = List.of(
@@ -54,7 +55,6 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     // String userId = null;
     // Map<String, Object> atr = acc.getSessionAttributes();
     // log.debug("SESSION:{} / {}", userId, atr);
-    if (wsock != null) { wsock.convertAndSend(concat("/api/sub/session/", userId), ret); }
     // if (atr != null) {
     //   userId = cast(atr.get("userId"), "");
     // }
@@ -85,6 +85,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     //     log.debug("KAFKA-SENDED:{}", dto);
     //   }
     // }
-    return ret;
+    receiveSessionMessages(concat("/api/sub/session/", userId), ret);
+    return MainEntity.Result.builder().build();
+  }
+  /* Session messages transmit system messages and hidden messages. */
+  @Override public List<ChatSession> receiveSessionMessages(String topic, List<ChatSession> list) {
+    if (wsock != null) { wsock.convertAndSend(topic, list); }
+    return list;
   }
 }

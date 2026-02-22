@@ -9,6 +9,7 @@ package com.xynerzy.message.control;
 
 import static com.xynerzy.commons.Constants.PTH_API;
 import static com.xynerzy.commons.Constants.PTH_PUB;
+import static com.xynerzy.commons.Constants.PTH_SUB;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.xynerzy.main.entity.MainEntity;
 import com.xynerzy.message.entity.MessageEntity;
 import com.xynerzy.message.service.MessageService;
 
@@ -36,15 +38,22 @@ public class MessageApiControl {
   
   private final MessageService messageService;
 
-  @Operation(summary = "Chatting Message List", tags = { CONTROLLER_TAG1 })
-  @PostMapping(path = PTH_API + PTH_PUB + "/chat/{sessionId}")
-  @MessageMapping("/chat/{sessionId}")
-  public List<MessageEntity.Message> messageList(
-    @PathVariable @DestinationVariable String sessionId,
+  @Operation(summary = "Send Chatting Messages", tags = { CONTROLLER_TAG1 })
+  @PostMapping(path = PTH_API + PTH_PUB + "/chat/{topic}")
+  @MessageMapping("/chat/{topic}")
+  public MainEntity.Result sendChatMessages(
+    @PathVariable @DestinationVariable String topic,
     @Parameter(hidden = true) Message<MessageEntity.Message> msg,
     @Parameter(hidden = true) MessageHeaders hdr,
     @Parameter(hidden = true) StompHeaderAccessor acc) throws Exception {
-    log.debug("receive-chat:{} / {}", sessionId, msg);
-    return messageService.messageList(msg, hdr, acc);
+    log.debug("receive-chat:{} / {}", topic, msg);
+    return messageService.sendChatMessages(msg, hdr, acc);
+  }
+  
+  @Operation(summary = "Receive Chatting Messages", tags = { CONTROLLER_TAG1 })
+  @PostMapping(path = PTH_API + PTH_SUB + "/chat/{topic}")
+  public List<MessageEntity.Message> receiveMessages(
+    @PathVariable String topic) throws Exception {
+    return messageService.receiveMessages(topic, null);
   }
 }

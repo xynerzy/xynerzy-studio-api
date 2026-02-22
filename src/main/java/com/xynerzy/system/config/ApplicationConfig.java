@@ -119,6 +119,7 @@ public class ApplicationConfig {
         })
         /* compatibility */
         .withSockJS()
+        // .setWebSocketEnabled(false)
         .setHeartbeatTime(1000);
     }
     @Override public void configureClientInboundChannel(@NonNull ChannelRegistration reg) {
@@ -127,14 +128,9 @@ public class ApplicationConfig {
           StompHeaderAccessor acc = StompHeaderAccessor.wrap(msg);
           log.debug("CHECK:{}", acc);
           if (acc != null) {
-            // Map<String, Object> nhdr = cast(acc.getHeader(StompHeaderAccessor.NATIVE_HEADERS), nhdr = null);
-            // if (nhdr != null) {
-            //   log.debug("CHECK:{} / {}", nhdr, nhdr.get(AUTHORIZATION));
-            // }
             if (StompCommand.CONNECT.equals(acc.getCommand())) {
               Map<String, Object> atr = acc.getSessionAttributes();
               String[] auth = String.valueOf(acc.getFirstNativeHeader(AUTHORIZATION)).split("[:]");
-              // String userId = cast(acc.getFirstNativeHeader(X_USER_ID), "");
               if (atr != null) {
                 String userId = "";
                 String sessionId = "";
