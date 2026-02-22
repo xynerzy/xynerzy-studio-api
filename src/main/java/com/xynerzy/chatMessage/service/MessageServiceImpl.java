@@ -19,7 +19,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
-import com.xynerzy.chatMessage.entity.ChatMessageEntity;
+import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
 import com.xynerzy.main.entity.MainEntity;
 
 import jakarta.annotation.PostConstruct;
@@ -35,18 +35,18 @@ public class MessageServiceImpl implements MessageService {
     log.trace("INIT:{}", MessageService.class);
   }
 
-  @Override public MainEntity.Result sendChatMessages(Message<ChatMessageEntity.Message> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
+  @Override public MainEntity.Result sendChatMessages(Message<ChatMessage> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
     Map<String, Object> attr = acc.getSessionAttributes();
     String sessionId = cast( attr.get("sessionId"), "");
-    List<ChatMessageEntity.Message> ret = List.of(
-      ChatMessageEntity.Message.builder()
+    List<ChatMessage> ret = List.of(
+      ChatMessage.builder()
         .type("my")
         .content("Hi! whatsup!?")
         .time("PM 01:10")
         .userId("tester")
         .unread(1)
       .build(),
-      ChatMessageEntity.Message.builder()
+      ChatMessage.builder()
         .type("their")
         .content("Nothing special. How about you?")
         .avatar("/images/test.svg")
@@ -59,7 +59,7 @@ public class MessageServiceImpl implements MessageService {
     return MainEntity.Result.builder().build();
   }
 
-  @Override  public List<ChatMessageEntity.Message> receiveMessages(String topic, List<ChatMessageEntity.Message> list) {
+  @Override  public List<ChatMessage> receiveMessages(String topic, List<ChatMessage> list) {
     if (wsock != null) { wsock.convertAndSend(topic, list); }
     return list;
   }

@@ -12,7 +12,7 @@ import lombok.Data;
 
 public class ChatMessageEntity {
   @Builder @Data
-  public static class Message {
+  public static class ChatMessage {
     private String type;
     private String content;
     private String avatar;
