@@ -132,6 +132,19 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
     }
   }
 
+  public static <T> T getBean(Class<T> cls) { return getBean(cls); }
+  public static <T> T getBean(String name, Class<T> cls) {
+    T ret = null;
+    if (instance != null) {
+      if (name != null) {
+        ret = instance.getAppctx().getBean(name, cls);
+      } else {
+        ret = instance.getAppctx().getBean(cls);
+      }
+    }
+    return ret;
+  }
+
   private void initCore() {
     log.info("INIT-CORE...");
     try {

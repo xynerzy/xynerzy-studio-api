@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
-import com.xynerzy.chatMessage.service.MessageService;
+import com.xynerzy.chatMessage.service.ChatMessageService;
 import com.xynerzy.main.entity.MainEntity;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,11 +32,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @RestController @RequiredArgsConstructor
-public class MessageApiControl {
+public class ChatMessageApiControl {
 
   static final String CONTROLLER_TAG1 = "Chatting Message API"; 
   
-  private final MessageService messageService;
+  private final ChatMessageService messageService;
 
   @Operation(summary = "Send Chatting Messages", tags = { CONTROLLER_TAG1 })
   @PostMapping(path = PTH_API + PTH_PUB + "/chat/{topic}")

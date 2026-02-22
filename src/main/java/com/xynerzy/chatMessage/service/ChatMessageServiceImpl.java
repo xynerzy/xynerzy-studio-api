@@ -27,12 +27,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @Service @RequiredArgsConstructor
-public class MessageServiceImpl implements MessageService {
+public class ChatMessageServiceImpl implements ChatMessageService {
   
   private final SimpMessagingTemplate wsock;
   
   @PostConstruct public void init() {
-    log.trace("INIT:{}", MessageService.class);
+    log.trace("INIT:{}", ChatMessageService.class);
   }
 
   @Override public MainEntity.Result sendChatMessages(Message<ChatMessage> msg, MessageHeaders hdr, StompHeaderAccessor acc) {

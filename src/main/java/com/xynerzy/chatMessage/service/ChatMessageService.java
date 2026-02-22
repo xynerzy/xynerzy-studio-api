@@ -16,7 +16,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
 import com.xynerzy.main.entity.MainEntity;
 
-public interface MessageService {
+public interface ChatMessageService {
   default MainEntity.Result sendChatMessages(Message<ChatMessage> msg, MessageHeaders hdr, StompHeaderAccessor acc) { return null; }
   default List<ChatMessage> receiveMessages(String topic, List<ChatMessage> list) { return list; }
 }
