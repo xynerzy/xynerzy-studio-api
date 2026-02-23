@@ -10,13 +10,11 @@ package com.xynerzy.chatMessage.service;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 import static com.xynerzy.commons.StringUtil.concat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
@@ -35,27 +33,43 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     log.trace("INIT:{}", ChatMessageService.class);
   }
 
-  @Override public MainEntity.Result sendChatMessages(Message<ChatMessage> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
-    Map<String, Object> attr = acc.getSessionAttributes();
+  @Override public MainEntity.Result sendChatMessages(ChatMessage msg, Map<String, Object> attr) {
     String sessionId = cast( attr.get("sessionId"), "");
-    List<ChatMessage> ret = List.of(
-      ChatMessage.builder()
-        .type("my")
-        .content("Hi! whatsup!?")
-        .time("PM 01:10")
-        .userId("tester")
-        .unread(1)
-      .build(),
-      ChatMessage.builder()
-        .type("their")
-        .content("Nothing special. How about you?")
-        .avatar("/images/test.svg")
-        .time("PM 01:10")
-        .userId("tester")
-        .unread(1)
-      .build()
-    );
-    receiveMessages(concat("/api/sub/chat/", sessionId), ret);
+    List<ChatMessage> ret = null;
+    log.debug("MSG:{}", msg);
+    if (msg.getType() == null && msg.getContent() == null) {
+      ret = List.of(
+        ChatMessage.builder()
+          .type("my")
+          .content("Hi! whatsup!?")
+          .time("PM 01:10")
+          .userId("tester")
+          .unread(1)
+        .build(),
+        ChatMessage.builder()
+          .type("their")
+          .content("Nothing special. How about you?")
+          .avatar("/images/test.svg")
+          .time("PM 01:10")
+          .userId("tester")
+          .unread(1)
+        .build()
+      );
+    } else {
+      String content = msg.getContent();
+      content = content.replaceAll("<br[ \\/]*>", "\n");
+      ret = new ArrayList<>();
+      ret.add(
+        ChatMessage.builder()
+          .type("my")
+          .content(content)
+          .time("PM 01:10")
+          .userId("tester")
+          .unread(0)
+        .build()
+      );
+    }
+    if (ret != null) { receiveMessages(concat("/api/sub/chat/", sessionId), ret); }
     return MainEntity.Result.builder().build();
   }
 

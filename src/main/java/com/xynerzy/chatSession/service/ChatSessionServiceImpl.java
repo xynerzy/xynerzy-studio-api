@@ -13,10 +13,7 @@ import static com.xynerzy.commons.StringUtil.concat;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.chatSession.entity.ChatSessionEntity.ChatSession;
@@ -35,8 +32,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     log.trace("INIT:{}", ChatSessionService.class);
   }
 
-  @Override public MainEntity.Result sendSessionMessages(Message<ChatSession> msg, MessageHeaders hdr, StompHeaderAccessor acc) {
-    Map<String, Object> attr = acc.getSessionAttributes();
+  @Override public MainEntity.Result sendSessionMessages(ChatSession msg, Map<String, Object> attr) {
     String userId = cast(attr.get("userId"), "");
     List<ChatSession> ret = List.of(
       ChatSession.builder()
