@@ -7,12 +7,8 @@
  **/
 package com.xynerzy.main.control;
 
-import java.util.Map;
-
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -49,17 +45,17 @@ public class MainApiControl {
     return mainService.main();
   }
   
-  @Operation(summary = "Sample Subscribe API", tags = { CONTROLLER_TAG1 })
-  @GetMapping(path = { "/subscribe/{topic}" }) @ResponseBody
-  public Object subscribe(@PathVariable String topic) throws AppException {
-    return mainService.subscribe(topic);
-  }
+  // @Operation(summary = "Sample Subscribe API", tags = { CONTROLLER_TAG1 })
+  // @GetMapping(path = { "/subscribe/{topic}" }) @ResponseBody
+  // public Object subscribe(@PathVariable String topic) throws AppException {
+  //   return mainService.subscribe(topic);
+  // }
 
-  @Operation(summary = "Sample Publish API", tags = { CONTROLLER_TAG1 })
-  @PostMapping(path = { "/publish/{topic}" }) @ResponseBody
-  public Object publish(@PathVariable String topic, @RequestBody Map<String, Object> prm) throws AppException {
-    return mainService.publish(topic, prm);
-  }
+  // @Operation(summary = "Sample Publish API", tags = { CONTROLLER_TAG1 })
+  // @PostMapping(path = { "/publish/{topic}" }) @ResponseBody
+  // public Object publish(@PathVariable String topic, @RequestBody Map<String, Object> prm) throws AppException {
+  //   return mainService.publish(topic, prm);
+  // }
 
   @Operation(summary = "SockJS + STOMP WebSocket Endpoint", tags = { CONTROLLER_TAG1 }, description = """
     SockJS endpoint for real-time messaging.

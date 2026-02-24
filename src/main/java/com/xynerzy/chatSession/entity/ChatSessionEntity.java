@@ -15,6 +15,7 @@ import lombok.Data;
 public class ChatSessionEntity {
   @Builder @Data
   public static class ChatSession {
+    private String sessionId;
     private String intro;
     private String name;
     private List<String> members;
