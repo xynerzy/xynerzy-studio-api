@@ -8,6 +8,7 @@
 package com.xynerzy.commons.llm;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
@@ -30,11 +31,11 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
   private final WebClient.Builder webClientBuilder;
 
   @Override
-  public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  public LinkedBlockingQueue<Object> streamChat(Map<String, String> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     return streamChatWithOauth2(request, onNext, onComplete, onError);
   }
 
-  private LinkedBlockingQueue<Object> streamChatWithOauth2(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  private LinkedBlockingQueue<Object> streamChatWithOauth2(Map<String, String> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     try {
       /* 1. Issue an access token using a refresh token */

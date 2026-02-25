@@ -7,6 +7,7 @@
  **/
 package com.xynerzy.commons.llm;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,7 +29,7 @@ public class LLMApiOpenAI implements LLMApiBase {
   private final LLMProperties props;
   private final WebClient.Builder webClientBuilder;
 
-  @Override public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  @Override public LinkedBlockingQueue<Object> streamChat(Map<String, String> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     LLMProperties openAIProps = props;
 
@@ -42,12 +43,15 @@ public class LLMApiOpenAI implements LLMApiBase {
       .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openAIProps.getApiKey())
       .build();
 
+    List<Map<String, String>> parts = new ArrayList<>();
+    for (String k : request.keySet()) {
+      parts.add(Map.of("role", k, "content", request.get(k)));
+    }
     Map<String, Object> requestBody = Map.of(
       "model", openAIProps.getModel(),
-      "messages", List.of(Map.of("role", "user", "content", request)),
+      "messages", parts,
       "stream", true
     );
-
     webClient.post()
       .uri("/chat/completions")
       .contentType(MediaType.APPLICATION_JSON)
@@ -68,7 +72,7 @@ public class LLMApiOpenAI implements LLMApiBase {
           data = line;
         } else if ("[DONE]".equals(line)) {
           onNext.accept("\0\0");
-          onComplete.run();
+          // onComplete.run();
           ret.add(Boolean.TRUE);
           return;
         }

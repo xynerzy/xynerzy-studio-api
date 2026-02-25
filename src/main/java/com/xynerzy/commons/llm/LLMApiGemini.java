@@ -7,7 +7,9 @@
  **/
 package com.xynerzy.commons.llm;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
@@ -27,7 +29,7 @@ public class LLMApiGemini implements LLMApiBase {
   private final WebClient.Builder webClientBuilder;
 
   @Override
-  public LinkedBlockingQueue<Object> streamChat(String request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  public LinkedBlockingQueue<Object> streamChat(Map<String, String> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     String baseUrl = props.getBaseUrl();
     String template = props.getUriTemplate();
@@ -36,7 +38,10 @@ public class LLMApiGemini implements LLMApiBase {
 
     WebClient webClient = webClientBuilder.baseUrl(baseUrl).build();
     GeminiRequest geminiRequest = createGeminiRequest(request);
-
+    // try {
+    //   log.debug("GEMINI-REQUEST:{}", new ObjectMapper().writeValueAsString(geminiRequest));
+    // } catch (Exception ignore) { }
+    // GEMINI-REQUEST:{"contents":[{"role":"user","parts":[{"text":"Hello! Who are you?"}]}]}
     final String TEMPLATE = template;
     webClient.post()
       .uri(uriBuilder -> uriBuilder
@@ -47,6 +52,7 @@ public class LLMApiGemini implements LLMApiBase {
       .retrieve()
       .bodyToFlux(GeminiResponse.class)
       .doOnNext(response -> {
+        // log.debug("NEXT:{}", response);
         String text = response.extractText();
         if (!text.isEmpty()) {
           onNext.accept(text);
@@ -64,10 +70,14 @@ public class LLMApiGemini implements LLMApiBase {
     return ret;
   }
 
-  public static GeminiRequest createGeminiRequest(String request) {
-    GeminiRequest.Part part = new GeminiRequest.Part(request);
-    GeminiRequest.Content content = new GeminiRequest.Content(List.of(part));
-    return new GeminiRequest(List.of(content));
+  public static GeminiRequest createGeminiRequest(Map<String, String> request) {
+    List<GeminiRequest.Content> contents = new ArrayList<>();
+    for (String key : request.keySet()) {
+      GeminiRequest.Part part = new GeminiRequest.Part(request.get(key));
+      GeminiRequest.Content content = new GeminiRequest.Content(key, List.of(part));
+      contents.add(content);
+    }
+    return new GeminiRequest(contents);
   }
     
   /* Request body Data model of Gemini API */
@@ -77,6 +87,7 @@ public class LLMApiGemini implements LLMApiBase {
 
     @Data @AllArgsConstructor
     public static class Content {
+      private String role;
       private List<Part> parts;
     }
 

@@ -44,18 +44,6 @@ public class MainApiControl {
   public Object main() throws AppException {
     return mainService.main();
   }
-  
-  // @Operation(summary = "Sample Subscribe API", tags = { CONTROLLER_TAG1 })
-  // @GetMapping(path = { "/subscribe/{topic}" }) @ResponseBody
-  // public Object subscribe(@PathVariable String topic) throws AppException {
-  //   return mainService.subscribe(topic);
-  // }
-
-  // @Operation(summary = "Sample Publish API", tags = { CONTROLLER_TAG1 })
-  // @PostMapping(path = { "/publish/{topic}" }) @ResponseBody
-  // public Object publish(@PathVariable String topic, @RequestBody Map<String, Object> prm) throws AppException {
-  //   return mainService.publish(topic, prm);
-  // }
 
   @Operation(summary = "SockJS + STOMP WebSocket Endpoint", tags = { CONTROLLER_TAG1 }, description = """
     SockJS endpoint for real-time messaging.

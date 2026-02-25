@@ -46,23 +46,6 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     List<ChatMessage> ret = null;
     log.debug("MSG:{}", msg);
     if (msg.getType() == null && msg.getContent() == null) {
-      // ret = List.of(
-      //   ChatMessage.builder()
-      //     .type("my")
-      //     .content("Hi! whatsup!?")
-      //     .time("PM 01:10")
-      //     .userId("tester")
-      //     .unread(1)
-      //   .build(),
-      //   ChatMessage.builder()
-      //     .type("their")
-      //     .content("Nothing special. How about you?")
-      //     .avatar("/images/test.svg")
-      //     .time("PM 01:10")
-      //     .userId("tester")
-      //     .unread(1)
-      //   .build()
-      // );
     } else {
       String content = msg.getContent();
       content = content.replaceAll("<br[ \t\r\n\\/]*>", "\n").trim();
@@ -90,31 +73,51 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         WebClient.Builder wbldr = WebClient.builder();
         // LLMApiBase api = new LLMApiGemini(props, wbldr);
         LLMApiBase api = new LLMApiOpenAI(props, wbldr);
-
-        String request = content;
-
-        // StringBuilder resp = new StringBuilder();
-        // log.info("Sending request to Gemini API...");
+        LLMApiBase api2 = new LLMApiOpenAI(props, wbldr);
+        String sstr = cast(attr.get("summary"), "");
+        Map<String, String> request = Map.of("user", content, "system", sstr != null ? sstr : "");
+        StringBuilder sbuf = new StringBuilder();
         LinkedBlockingQueue<Object> latch = api.streamChat(
             request,
             chunk -> {
-              log.debug("Received chunk: {}", chunk);
-              // resp.append(chunk);
+              sbuf.append(chunk);
+              log.trace("Received chunk: {}", chunk);
               receiveMessages(concat("/api/sub/chat/", sessionId),
               List.of(
               ChatMessage.builder()
-                .messageId(messageId)
                 .type("their")
+                .messageId(messageId)
                 .content(chunk)
+                .avatar("/images/test.svg")
+                .time(sdf.format(new Date()))
+                .userId("tester")
+                .unread(1)
               .build()));
             },
-            () -> log.info("Stream completed."),
+            () -> {
+              if (sbuf.length() == 0) { return; }
+              log.debug("REPLY:{} / {}", request.get("user"), sbuf);
+              String reply = String.valueOf(sbuf);
+              sbuf.setLength(0);
+              try {
+                LinkedBlockingQueue<Object> latch2 = api2.streamChat(
+                  Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \nA:%s\nB:%s", request.get("user"), reply)),
+                  c -> {
+                    // log.debug("C:{}", c);
+                    sbuf.append(c);
+                  },
+                  () -> {
+                    String summary = String.valueOf(sbuf);
+                    log.info("Stream completed. : {}", summary);
+                    attr.put("summary", summary);
+                  },
+                  e -> { });
+              } catch (Exception e) {
+                log.info("E:", e);
+              }
+            },
             e -> log.error("Stream failed with an error", e)
         );
-        /* Assert */
-        // while (latch.poll(1000, TimeUnit.MILLISECONDS) == null) { }
-        // assertFalse(resp.toString().isEmpty(), "Response should not be empty.");
-        // log.info("Final Response: {}", resp.toString());
       }
     }
     if (ret != null) { receiveMessages(concat("/api/sub/chat/", sessionId), ret); }

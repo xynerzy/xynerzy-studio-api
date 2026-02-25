@@ -9,6 +9,7 @@ package com.xynerzy.commons;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +40,7 @@ public class LLMApiTest {
     WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiOpenAI(props, wbldr);
 
-    String request = "Hello? Who are you?";
+    Map<String, String> request = Map.of("user", "Hello? Who are you?");
     
     StringBuilder resp = new StringBuilder();
     /* Act */
@@ -76,7 +77,7 @@ public class LLMApiTest {
     WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiGemini(props, wbldr);
 
-    String request = "Hello? Who are you?";
+    Map<String, String> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
     /* Act */
@@ -107,7 +108,7 @@ public class LLMApiTest {
     WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiGeminiOAuth2(props, wbldr);
 
-    String request = "Hello? Who are you?";
+    Map<String, String> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
     /* Act */
@@ -138,7 +139,7 @@ public class LLMApiTest {
     WebClient.Builder wbldr = WebClient.builder();
     LLMApiOllama api = new LLMApiOllama(props, wbldr);
 
-    String request = "Hello? Who are you?";
+    Map<String, String> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
     /* Act */
