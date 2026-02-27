@@ -50,6 +50,11 @@ public class LLMApiOpenAI implements LLMApiBase {
     Map<String, Object> requestBody = Map.of(
       "model", openAIProps.getModel(),
       "messages", parts,
+      "temperature", 0.7,
+      "top_p", 0.9,
+      "repeat_penalty", 1.2,
+      "num_predict", 1024,
+      "max_tokens", 512,
       "stream", true
     );
     webClient.post()

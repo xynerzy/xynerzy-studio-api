@@ -236,4 +236,10 @@ public class DataUtil {
     if (t != null) { ret = t; }
     return ret;
   }
+
+  public static <T> T valueOf(Object o, T def) {
+    T ret = null;
+    if ((ret = cast(o, def)) == null) { ret = def; }
+    return ret;
+  }
 }

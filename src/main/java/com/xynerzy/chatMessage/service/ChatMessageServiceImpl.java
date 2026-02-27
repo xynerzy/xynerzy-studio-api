@@ -7,16 +7,17 @@
  **/
 package com.xynerzy.chatMessage.service;
 
+import static com.xynerzy.commons.DataUtil.valueOf;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 import static com.xynerzy.commons.StringUtil.concat;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ChatMessageServiceImpl implements ChatMessageService {
   
   private final SimpMessagingTemplate wsock;
+
+  private final Map<String, Object> chatCtx = new LinkedHashMap<>();
   
   @PostConstruct public void init() {
     log.trace("INIT:{}", ChatMessageService.class);
@@ -43,8 +46,11 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
   @Override public MainEntity.Result sendChatMessages(ChatMessage msg, Map<String, Object> attr) {
     String sessionId = cast(attr.get("sessionId"), "");
+    Map<String, Object> cctx = valueOf(chatCtx.get(sessionId), new LinkedHashMap<>());
+    chatCtx.put(sessionId, cctx);
     List<ChatMessage> ret = null;
-    log.debug("MSG:{}", msg);
+    log.debug("SESS:{} / MSG:{}", sessionId, msg);
+    log.debug("CCTX:{}", cctx);
     if (msg.getType() == null && msg.getContent() == null) {
     } else {
       String content = msg.getContent();
@@ -74,10 +80,12 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         // LLMApiBase api = new LLMApiGemini(props, wbldr);
         LLMApiBase api = new LLMApiOpenAI(props, wbldr);
         LLMApiBase api2 = new LLMApiOpenAI(props, wbldr);
-        String sstr = cast(attr.get("summary"), "");
-        Map<String, String> request = Map.of("user", content, "system", sstr != null ? sstr : "");
+        String sstr = cast(cctx.get("summary"), "");
+        Map<String, String> request = Map.of(
+          "user", content,
+          "system", sstr != null ? concat("Previous summary: ", sstr) : "");
         StringBuilder sbuf = new StringBuilder();
-        LinkedBlockingQueue<Object> latch = api.streamChat(
+        api.streamChat(
             request,
             chunk -> {
               sbuf.append(chunk);
@@ -100,16 +108,16 @@ public class ChatMessageServiceImpl implements ChatMessageService {
               String reply = String.valueOf(sbuf);
               sbuf.setLength(0);
               try {
-                LinkedBlockingQueue<Object> latch2 = api2.streamChat(
-                  Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \nA:%s\nB:%s", request.get("user"), reply)),
+                api2.streamChat(
+                  Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \n%s\nA:%s\nB:%s", sstr, request.get("user"), reply)),
                   c -> {
                     // log.debug("C:{}", c);
                     sbuf.append(c);
                   },
                   () -> {
                     String summary = String.valueOf(sbuf);
-                    log.info("Stream completed. : {}", summary);
-                    attr.put("summary", summary);
+                    log.info("SUMMARY[{}] : {}", summary.length(), summary);
+                    cctx.put("summary", summary);
                   },
                   e -> { });
               } catch (Exception e) {
