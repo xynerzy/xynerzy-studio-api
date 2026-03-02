@@ -61,6 +61,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.WebRequestInterceptor;
+import org.springframework.web.context.support.StandardServletEnvironment;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.WebRequestHandlerInterceptorAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
@@ -170,9 +171,9 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
 
   private void initEnvr() {
     try {
-      if (environment != null) {
+      if (environment != null && environment instanceof StandardServletEnvironment) {
         {
-          org.springframework.web.context.support.StandardServletEnvironment envr = cast(environment, envr = null);
+          StandardServletEnvironment envr = cast(environment, envr = null);
           java.util.Iterator<org.springframework.core.env.PropertySource<?>> iter = envr.getPropertySources().iterator();
           while(iter.hasNext()) {
             org.springframework.core.env.PropertySource<?> itm = iter.next();

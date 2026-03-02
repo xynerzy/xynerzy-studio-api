@@ -21,10 +21,10 @@ import java.util.UUID;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
 import com.xynerzy.commons.llm.LLMApiBase;
+import com.xynerzy.commons.llm.LLMApiGemini;
 import com.xynerzy.commons.llm.LLMApiOpenAI;
 import com.xynerzy.commons.llm.LLMProperties;
 import com.xynerzy.main.entity.MainEntity;
@@ -70,16 +70,17 @@ public class ChatMessageServiceImpl implements ChatMessageService {
       {
         String messageId = UUID.randomUUID().toString();
         LLMProperties props = new LLMProperties();
-        // props.setApiKey(System.getenv("GEMINI_API_KEY"));
-        // props.setModel(System.getenv("GEMINI_API_MODEL"));
-        props.setBaseUrl(System.getenv("OPENAI_API_BASE_URL"));
-        props.setModel(System.getenv("OPENAI_API_MODEL"));
-        props.setApiKey(System.getenv("OPENAI_API_KEY"));
+        props.setApiKey(System.getenv("GEMINI_API_KEY"));
+        props.setModel(System.getenv("GEMINI_API_MODEL"));
+        // props.setBaseUrl(System.getenv("OPENAI_API_BASE_URL"));
+        // props.setModel(System.getenv("OPENAI_API_MODEL"));
+        // props.setApiKey(System.getenv("OPENAI_API_KEY"));
 
-        WebClient.Builder wbldr = WebClient.builder();
+        // WebClient.Builder wbldr = WebClient.builder();
         // LLMApiBase api = new LLMApiGemini(props, wbldr);
-        LLMApiBase api = new LLMApiOpenAI(props, wbldr);
-        LLMApiBase api2 = new LLMApiOpenAI(props, wbldr);
+        // LLMApiBase api = new LLMApiOpenAI(props);
+        LLMApiBase api = new LLMApiGemini(props);
+        LLMApiBase api2 = new LLMApiOpenAI(props);
         String sstr = cast(cctx.get("summary"), "");
         Map<String, String> request = Map.of(
           "user", content,

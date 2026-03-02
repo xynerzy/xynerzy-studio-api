@@ -24,7 +24,8 @@ import java.util.function.Consumer;
 
 import org.json.JSONObject;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.reactive.function.client.WebClient;
+
+import com.xynerzy.system.runtime.CoreSystem;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 public class LLMApiOpenAI implements LLMApiBase {
 
   private final LLMProperties props;
-  private final WebClient.Builder webClientBuilder;
 
   @Override public LinkedBlockingQueue<Object> streamChat(
     Map<String, String> request,
@@ -41,24 +41,13 @@ public class LLMApiOpenAI implements LLMApiBase {
     Runnable onComplete,
     Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
-    LLMProperties openAIProps = props;
-
-    /* Set the connection timeout to 5 seconds. */
-    // HttpClient httpClient = HttpClient.create()
-    //   .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
-
-    // WebClient webClient = webClientBuilder
-    //   .clientConnector(new ReactorClientHttpConnector(httpClient))
-    //   .baseUrl(openAIProps.getBaseUrl())
-    //   .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openAIProps.getApiKey())
-    //   .build();
-    new Thread(() -> {
+    CoreSystem.executeBackground(() -> {
       List<Map<String, String>> parts = new ArrayList<>();
       for (String k : request.keySet()) {
         parts.add(Map.of("role", k, "content", request.get(k)));
       }
       Map<String, Object> requestBody = Map.of(
-        "model", openAIProps.getModel(),
+        "model", props.getModel(),
         "messages", parts,
         "temperature", 0.7,
         "top_p", 0.9,
@@ -68,14 +57,17 @@ public class LLMApiOpenAI implements LLMApiBase {
         "stream", true
       );
       try {
-        URL url = new URL(String.format("%s%s", openAIProps.getBaseUrl(), "/chat/completions"));
+        URL url = new URL(String.format("%s%s", props.getBaseUrl(), "/chat/completions"));
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        /* Set the connection timeout to 5 seconds. */
+        con.setConnectTimeout(5000);
+        con.setReadTimeout(5000);
         String req = new JSONObject(requestBody).toString();
         con.setRequestMethod("POST");
         con.setDoOutput(true);
         con.setRequestProperty("Content-Type", "application/json");
-        if (openAIProps.getApiKey() != null) {
-          con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + openAIProps.getApiKey());
+        if (props.getApiKey() != null) {
+          con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + props.getApiKey());
         }
         OutputStream ostream = null;
         InputStream istream = null;
@@ -95,9 +87,8 @@ public class LLMApiOpenAI implements LLMApiBase {
           LOOP: for (String rl; (rl = reader.readLine()) != null; cnt++) {
             log.debug(rl);
             // if (cnt > 10) {
-            //   /* 강제 종료 */
             //   con.disconnect();
-            //   break;
+            //   break LOOP;
             // }
             /**
              * The stream response comes in over multiple lines in the format "data: { ... }" 
@@ -118,7 +109,7 @@ public class LLMApiOpenAI implements LLMApiBase {
             }
             if (data == null || "".equals(data)) { continue LOOP; }
             try {
-              log.debug("DATA:{}", data);
+              log.trace("DATA:{}", data);
               JSONObject json = new JSONObject(data);
               String content = json.getJSONArray("choices")
                 .getJSONObject(0)
@@ -133,6 +124,7 @@ public class LLMApiOpenAI implements LLMApiBase {
               log.error("Error parsing stream data: {}", data, e);
             }
           }
+          onComplete.run();
         } finally {
           try { con.disconnect(); } catch (Exception ignore) { }
           safeclose(reader);
@@ -141,51 +133,9 @@ public class LLMApiOpenAI implements LLMApiBase {
         }
       } catch (Exception e) {
         log.warn("E:", e);
+        onError.accept(e);
       }
-    }).start();
-    {
-      // webClient.post()
-      //   .uri("/chat/completions")
-      //   .contentType(MediaType.APPLICATION_JSON)
-      //   .bodyValue(requestBody)
-      //   .retrieve()
-      //   .bodyToFlux(String.class)
-      //   .doOnNext(line -> {
-      //     /**
-      //      * The stream response comes in over multiple lines in the format "data: { ... }" 
-      //      * When the response is complete, the message "data: [DONE]" is displayed.
-      //      **/
-      //     String data = "";
-      //     if (line.startsWith("data:")) {
-      //       data = line.substring(5).trim();
-      //     } else if (line.startsWith("\u007b")) {
-      //       /* {:007b ... }:007d */ 
-      //       data = line;
-      //     } else if ("[DONE]".equals(line)) {
-      //       onNext.accept("\0\0");
-      //       // onComplete.run();
-      //       ret.add(Boolean.TRUE);
-      //       return;
-      //     }
-      //     try {
-      //       JSONObject json = new JSONObject(data);
-      //       String content = json.getJSONArray("choices")
-      //         .getJSONObject(0)
-      //         .getJSONObject("delta")
-      //         .optString("content");
-      //       if (content != null && !content.isEmpty()) {
-      //         onNext.accept(content);
-      //       }
-      //     } catch (Exception e) {
-      //       onNext.accept("\0\0");
-      //       ret.add(e);
-      //       log.error("Error parsing stream data: {}", data, e);
-      //     }
-      //   })
-      //   .doOnComplete(onComplete)
-      //   .doOnError(onError)
-      //   .subscribe();
-    }
+    });
     return ret;
   }
 }

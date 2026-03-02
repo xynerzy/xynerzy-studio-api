@@ -14,6 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.xynerzy.commons.TestUtil.TestLevel;
@@ -23,6 +24,7 @@ import com.xynerzy.commons.llm.LLMApiGeminiOAuth2;
 import com.xynerzy.commons.llm.LLMApiOllama;
 import com.xynerzy.commons.llm.LLMApiOpenAI;
 import com.xynerzy.commons.llm.LLMProperties;
+import com.xynerzy.system.runtime.CoreSystem;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +41,7 @@ public class LLMApiTest {
 
     // WebClient.Builder wbldr = WebClient.builder();
     // LLMApiBase api = new LLMApiOpenAI(props, wbldr);
-    LLMApiBase api = new LLMApiOpenAI(props, null);
+    LLMApiBase api = new LLMApiOpenAI(props);
 
     Map<String, String> request = Map.of("user", "Hello? Who are you?");
     
@@ -75,14 +77,15 @@ public class LLMApiTest {
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
 
-    WebClient.Builder wbldr = WebClient.builder();
-    LLMApiBase api = new LLMApiGemini(props, wbldr);
+    // WebClient.Builder wbldr = WebClient.builder();
+    LLMApiBase api = new LLMApiGemini(props);
 
     Map<String, String> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
     /* Act */
     log.info("Sending request to Gemini API...");
+    CoreSystem.getInstance(new StandardEnvironment());
     LinkedBlockingQueue<Object> latch = api.streamChat(
         request,
         chunk -> {
