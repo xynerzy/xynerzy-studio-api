@@ -37,8 +37,9 @@ public class LLMApiTest {
     props.setModel(System.getenv("OPENAI_API_MODEL"));
     props.setApiKey(System.getenv("OPENAI_API_KEY"));
 
-    WebClient.Builder wbldr = WebClient.builder();
-    LLMApiBase api = new LLMApiOpenAI(props, wbldr);
+    // WebClient.Builder wbldr = WebClient.builder();
+    // LLMApiBase api = new LLMApiOpenAI(props, wbldr);
+    LLMApiBase api = new LLMApiOpenAI(props, null);
 
     Map<String, String> request = Map.of("user", "Hello? Who are you?");
     

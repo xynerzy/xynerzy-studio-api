@@ -86,45 +86,45 @@ public class ChatMessageServiceImpl implements ChatMessageService {
           "system", sstr != null ? concat("Previous summary: ", sstr) : "");
         StringBuilder sbuf = new StringBuilder();
         api.streamChat(
-            request,
-            chunk -> {
-              sbuf.append(chunk);
-              log.trace("Received chunk: {}", chunk);
-              receiveMessages(concat("/api/sub/chat/", sessionId),
-              List.of(
-              ChatMessage.builder()
-                .type("their")
-                .messageId(messageId)
-                .content(chunk)
-                .avatar("/images/test.svg")
-                .time(sdf.format(new Date()))
-                .userId("tester")
-                .unread(1)
-              .build()));
-            },
-            () -> {
-              if (sbuf.length() == 0) { return; }
-              log.debug("REPLY:{} / {}", request.get("user"), sbuf);
-              String reply = String.valueOf(sbuf);
-              sbuf.setLength(0);
-              try {
-                api2.streamChat(
-                  Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \n%s\nA:%s\nB:%s", sstr, request.get("user"), reply)),
-                  c -> {
-                    // log.debug("C:{}", c);
-                    sbuf.append(c);
-                  },
-                  () -> {
-                    String summary = String.valueOf(sbuf);
-                    log.info("SUMMARY[{}] : {}", summary.length(), summary);
-                    cctx.put("summary", summary);
-                  },
-                  e -> { });
-              } catch (Exception e) {
-                log.info("E:", e);
-              }
-            },
-            e -> log.error("Stream failed with an error", e)
+          request,
+          chunk -> {
+            sbuf.append(chunk);
+            log.trace("Received chunk: {}", chunk);
+            receiveMessages(concat("/api/sub/chat/", sessionId),
+            List.of(
+            ChatMessage.builder()
+              .type("their")
+              .messageId(messageId)
+              .content(chunk)
+              .avatar("/images/test.svg")
+              .time(sdf.format(new Date()))
+              .userId("tester")
+              .unread(1)
+            .build()));
+          },
+          () -> {
+            if (sbuf.length() == 0) { return; }
+            log.debug("REPLY:{} / {}", request.get("user"), sbuf);
+            String reply = String.valueOf(sbuf);
+            sbuf.setLength(0);
+            try {
+              api2.streamChat(
+                Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \n%s\nA:%s\nB:%s", sstr, request.get("user"), reply)),
+                c -> {
+                  // log.debug("C:{}", c);
+                  sbuf.append(c);
+                },
+                () -> {
+                  String summary = String.valueOf(sbuf);
+                  log.info("SUMMARY[{}] : {}", summary.length(), summary);
+                  cctx.put("summary", summary);
+                },
+                e -> { });
+            } catch (Exception e) {
+              log.info("E:", e);
+            }
+          },
+          e -> log.error("Stream failed with an error", e)
         );
       }
     }

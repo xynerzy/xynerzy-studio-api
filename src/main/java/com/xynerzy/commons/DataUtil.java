@@ -94,6 +94,24 @@ public class DataUtil {
   
   public static Map<String, Object> newMap() { return new LinkedHashMap<>(); }
 
+	public static Map<String, Object> map(Object... arg) {
+		Map<String, Object> ret = new LinkedHashMap<>();
+		if (arg == null) { return ret; }
+		String k = null;
+		for (int inx = 0; inx < arg.length; inx++) {
+			switch (inx % 2) {
+			case 0: {
+				k = String.valueOf(arg[inx]);
+			} break;
+			default: {
+				if (k != null) { ret.put(k, arg[inx]); }
+				k = null;
+			} break;
+			}
+		}
+		return ret;
+	}
+
   @SafeVarargs
   public static <T extends Object> Map<String, T> mergeMap(T... maps) {
     Map<String, T> ret = new LinkedHashMap<>();
