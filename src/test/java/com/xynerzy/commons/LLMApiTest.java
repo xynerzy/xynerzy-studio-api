@@ -7,8 +7,13 @@
  **/
 package com.xynerzy.commons;
 
+import static com.xynerzy.commons.IOUtil.safeclose;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +22,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xynerzy.commons.TestUtil.TestLevel;
 import com.xynerzy.commons.llm.LLMApiBase;
 import com.xynerzy.commons.llm.LLMApiGemini;
@@ -161,5 +171,69 @@ public class LLMApiTest {
     while (latch.poll(1000, TimeUnit.MILLISECONDS) == null) { }
     assertFalse(resp.toString().isEmpty(), "Response should not be empty.");
     log.info("Final Response: {}", resp.toString());
+  }
+
+  @Test public void readJSONTest() throws Exception {
+    String data = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello! I am a large language model, trained by Google.\"},{\"text\":\"How was your day?.\"}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":7,\"candidatesTokenCount\":13,\"totalTokenCount\":48,\"promptTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":7}],\"thoughtsTokenCount\":28},\"modelVersion\":\"gemini-2.5-flash\",\"responseId\":\"R7KlaaF6ruDaug--mcjYAQ\"}";
+    Reader reader = null;
+    // TokenBuffer buffer = null;
+    int depth = 0;
+    JsonFactory factory = new JsonFactory();
+    ObjectMapper mapper = new ObjectMapper();
+    List<String> keys = new ArrayList<>();
+    try {
+      reader = new StringReader(data);
+      JsonParser parser = factory.createParser(reader);
+      String key = "";
+      while (parser.nextToken() != null) {
+        JsonToken token = parser.currentToken();
+        log.debug("TOKEN[{}]:{},KEYS:{}", depth, token, keys);
+        switch (token) {
+        case FIELD_NAME: {
+          key = parser.getValueAsString();
+        } break;
+        case START_OBJECT: {
+          if (depth == 0) {
+            // buffer = new TokenBuffer(parser);
+          } else {
+            keys.add(key);
+            log.debug("START-OBJECT[{}]:{} / {}", depth, key, keys);
+            if ("[candidates, 0, content, parts, 0]".equals(String.valueOf(keys))) {
+              JsonNode node = mapper.readTree(parser);
+              if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+              log.info("NODE:{}", node);
+            }
+          }
+          depth += 1;
+        } break;
+        case END_OBJECT: {
+          if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+          depth -= 1;
+        } break;
+        case START_ARRAY: {
+          if (depth == 0) {
+            // buffer = new TokenBuffer(parser);
+          } else {
+            keys.add(key);
+            log.debug("START-ARRAY[{}]:{} / {}", depth, key, keys);
+          }
+          key = "0";
+          depth += 1;
+        } break;
+        case END_ARRAY: {
+          if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+          depth -= 1;
+        } break;
+        case VALUE_STRING:
+        default:
+          log.debug("STRING:{}", parser.getText());
+        }
+        // if (buffer != null) {
+        //   buffer.copyCurrentEvent(parser);
+        // }
+      }
+    } finally {
+      safeclose(reader);
+    }
   }
 }
