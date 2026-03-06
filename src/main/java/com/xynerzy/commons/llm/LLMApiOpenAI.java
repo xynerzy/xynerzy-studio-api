@@ -8,6 +8,7 @@
 package com.xynerzy.commons.llm;
 
 import static com.xynerzy.commons.IOUtil.safeclose;
+import static com.xynerzy.commons.ReflectionUtil.cast;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -36,7 +37,7 @@ public class LLMApiOpenAI implements LLMApiBase {
   private final LLMProperties props;
 
   @Override public LinkedBlockingQueue<Object> streamChat(
-    Map<String, String> request,
+    Map<String, Object> request,
     Consumer<String> onNext,
     Runnable onComplete,
     Consumer<Throwable> onError) {
@@ -44,7 +45,7 @@ public class LLMApiOpenAI implements LLMApiBase {
     CoreSystem.executeBackground(() -> {
       List<Map<String, String>> parts = new ArrayList<>();
       for (String k : request.keySet()) {
-        parts.add(Map.of("role", k, "content", request.get(k)));
+        parts.add(Map.of("role", k, "content", cast(request.get(k), "")));
       }
       Map<String, Object> requestBody = Map.of(
         "model", props.getModel(),
@@ -104,7 +105,6 @@ public class LLMApiOpenAI implements LLMApiBase {
             if ("[DONE]".equals(data)) {
               onNext.accept("\0\0");
               // onComplete.run();
-              ret.add(Boolean.TRUE);
               break LOOP;
             }
             if (data == null || "".equals(data)) { continue LOOP; }
@@ -125,6 +125,7 @@ public class LLMApiOpenAI implements LLMApiBase {
             }
           }
           onComplete.run();
+          ret.add(Boolean.TRUE);
         } finally {
           try { con.disconnect(); } catch (Exception ignore) { }
           safeclose(reader);
@@ -134,6 +135,7 @@ public class LLMApiOpenAI implements LLMApiBase {
       } catch (Exception e) {
         log.warn("E:", e);
         onError.accept(e);
+        ret.add(Boolean.TRUE);
       }
     });
     return ret;

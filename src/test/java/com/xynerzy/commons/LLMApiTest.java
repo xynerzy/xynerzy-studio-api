@@ -7,6 +7,7 @@
  **/
 package com.xynerzy.commons;
 
+import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -90,7 +91,10 @@ public class LLMApiTest {
     // WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiGemini(props);
 
-    Map<String, String> request = Map.of("user", "Hello? Who are you?");
+    Map<String, Object> request = map(
+      // "system", "He is korean, speak in Korean Language",
+      "user", "Hello? Who are you?"
+    );
 
     StringBuilder resp = new StringBuilder();
     /* Act */
@@ -176,7 +180,6 @@ public class LLMApiTest {
   @Test public void readJSONTest() throws Exception {
     String data = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello! I am a large language model, trained by Google.\"},{\"text\":\"How was your day?.\"}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":7,\"candidatesTokenCount\":13,\"totalTokenCount\":48,\"promptTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":7}],\"thoughtsTokenCount\":28},\"modelVersion\":\"gemini-2.5-flash\",\"responseId\":\"R7KlaaF6ruDaug--mcjYAQ\"}";
     Reader reader = null;
-    // TokenBuffer buffer = null;
     int depth = 0;
     JsonFactory factory = new JsonFactory();
     ObjectMapper mapper = new ObjectMapper();
@@ -187,21 +190,17 @@ public class LLMApiTest {
       String key = "";
       while (parser.nextToken() != null) {
         JsonToken token = parser.currentToken();
-        log.debug("TOKEN[{}]:{},KEYS:{}", depth, token, keys);
         switch (token) {
         case FIELD_NAME: {
           key = parser.getValueAsString();
         } break;
         case START_OBJECT: {
-          if (depth == 0) {
-            // buffer = new TokenBuffer(parser);
-          } else {
+          if (depth > 0) {
             keys.add(key);
-            log.debug("START-OBJECT[{}]:{} / {}", depth, key, keys);
             if ("[candidates, 0, content, parts, 0]".equals(String.valueOf(keys))) {
               JsonNode node = mapper.readTree(parser);
               if (keys.size() > 0) { keys.remove(keys.size() - 1); }
-              log.info("NODE:{}", node);
+              log.info("TEXTE:{}", node.get("text"));
             }
           }
           depth += 1;
@@ -212,10 +211,8 @@ public class LLMApiTest {
         } break;
         case START_ARRAY: {
           if (depth == 0) {
-            // buffer = new TokenBuffer(parser);
           } else {
             keys.add(key);
-            log.debug("START-ARRAY[{}]:{} / {}", depth, key, keys);
           }
           key = "0";
           depth += 1;
@@ -226,11 +223,7 @@ public class LLMApiTest {
         } break;
         case VALUE_STRING:
         default:
-          log.debug("STRING:{}", parser.getText());
         }
-        // if (buffer != null) {
-        //   buffer.copyCurrentEvent(parser);
-        // }
       }
     } finally {
       safeclose(reader);

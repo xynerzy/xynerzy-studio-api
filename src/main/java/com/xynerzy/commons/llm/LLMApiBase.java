@@ -14,5 +14,5 @@ import java.util.function.Consumer;
 /* LLM API Base Interface */
 public interface LLMApiBase {
   /* Process streaming messages */
-  default LinkedBlockingQueue<Object> streamChat(Map<String, String> msg, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) { return null; }
+  default LinkedBlockingQueue<Object> streamChat(Map<String, Object> msg, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) { return null; }
 }

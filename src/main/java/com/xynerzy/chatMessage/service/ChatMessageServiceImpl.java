@@ -7,6 +7,7 @@
  **/
 package com.xynerzy.chatMessage.service;
 
+import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.DataUtil.valueOf;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 import static com.xynerzy.commons.StringUtil.concat;
@@ -79,12 +80,15 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         // WebClient.Builder wbldr = WebClient.builder();
         // LLMApiBase api = new LLMApiGemini(props, wbldr);
         // LLMApiBase api = new LLMApiOpenAI(props);
+        // log.debug("PROPS:{}", props);
         LLMApiBase api = new LLMApiGemini(props);
-        LLMApiBase api2 = new LLMApiOpenAI(props);
+        LLMApiBase api2 = new LLMApiGemini(props);
         String sstr = cast(cctx.get("summary"), "");
-        Map<String, String> request = Map.of(
-          "user", content,
-          "system", sstr != null ? concat("Previous summary: ", sstr) : "");
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("user", content);
+        if (sstr != null) {
+          request.put("system", concat("Previous summary: ", sstr));
+        }
         StringBuilder sbuf = new StringBuilder();
         api.streamChat(
           request,

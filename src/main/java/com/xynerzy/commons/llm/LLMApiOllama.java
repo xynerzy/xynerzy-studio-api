@@ -7,6 +7,8 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.ReflectionUtil.cast;
+
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
@@ -35,10 +37,9 @@ public class LLMApiOllama implements LLMApiBase {
   }
 
   @Override
-  public LinkedBlockingQueue<Object> streamChat(Map<String, String> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
-    OllamaRequest ollamaRequest = new OllamaRequest(props.getModel(), request.get("user"), request.get("system"), true);
-
+    OllamaRequest ollamaRequest = new OllamaRequest(props.getModel(), cast(request.get("user"), ""), cast(request.get("system"), ""), true);
     webClient.post()
       .uri("/api/generate")
       .bodyValue(ollamaRequest)

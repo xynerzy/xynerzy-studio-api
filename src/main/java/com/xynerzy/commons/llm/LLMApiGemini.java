@@ -7,15 +7,18 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.UTF8;
+import static com.xynerzy.commons.DataUtil.list;
+import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.safeclose;
+import static com.xynerzy.commons.ReflectionUtil.cast;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +33,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.xynerzy.system.runtime.CoreSystem;
 
 import lombok.AllArgsConstructor;
@@ -45,7 +47,7 @@ public class LLMApiGemini implements LLMApiBase {
   // private final WebClient.Builder webClientBuilder;
 
   @Override
-  public LinkedBlockingQueue<Object> streamChat(Map<String, String> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     CoreSystem.executeBackground(() -> {
       String baseUrl = props.getBaseUrl();
@@ -54,16 +56,26 @@ public class LLMApiGemini implements LLMApiBase {
       if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
       // final String TEMPLATE = template;
       List<Map<String, Object>> parts = new ArrayList<>();
-      for (String k : request.keySet()) {
-        parts.add(Map.of(
-          "role", k,
+      // for (String k : request.keySet()) {
+        parts.add(map(
+          "role", "user",
           "parts", 
-          List.of(
-            Map.of("text", request.get(k))
+          list(
+            map("text", request.get("user"))
           )
         ));
+      // }
+      Map<String, Object> requestBody = map("contents", parts);
+      if (request.containsKey("system")) {
+        requestBody.put("system_instruction",
+          map(
+            "parts",
+            list(
+              map("text", request.get("system"))
+            )
+          )
+        );
       }
-      Map<String, Object> requestBody = Map.of("contents", parts);
       // GEMINI-REQUEST:{"contents":[{"role":"user","parts":[{"text":"Hello! Who are you?"}]}]}
       try {
         URL url = new URL(
@@ -77,6 +89,7 @@ public class LLMApiGemini implements LLMApiBase {
         con.setConnectTimeout(10000);
         con.setReadTimeout(10000);
         String req = new JSONObject(requestBody).toString();
+        log.debug("REQUEST-BODY:{}", req);
         con.setRequestMethod("POST");
         con.setDoOutput(true);
         con.setRequestProperty("Content-Type", "application/json");
@@ -85,52 +98,74 @@ public class LLMApiGemini implements LLMApiBase {
         }
         OutputStream ostream = null;
         InputStream istream = null;
-        InputStreamReader rstream = null;
-        BufferedReader reader = null;
+        Reader reader = null;
         try {
           ostream = con.getOutputStream();
-          ostream.write(req.getBytes(StandardCharsets.UTF_8));
+          ostream.write(req.getBytes(UTF8));
         } finally {
           safeclose(ostream);
         }
         log.info("START-REQUEST...");
         try {
           istream = con.getInputStream();
-          rstream = new InputStreamReader(istream, StandardCharsets.UTF_8);
-          reader = new BufferedReader(rstream);
-          int cnt = 0;
-          TokenBuffer buffer = null;
+          reader = new InputStreamReader(istream, UTF8);
+          // {
+          //   java.io.BufferedReader breader = new java.io.BufferedReader(reader);
+          //   StringBuilder sb = new StringBuilder();
+          //   for (String rl; (rl = breader.readLine()) != null;) { sb.append(rl).append("\n"); }
+          //   breader.close();
+          //   reader.close();
+          //   log.debug("RESULT:{}", sb);
+          //   reader = new java.io.StringReader(String.valueOf(sb));
+          // }
           int depth = 0;
           JsonFactory factory = new JsonFactory();
           JsonParser parser = factory.createParser(reader);
           ObjectMapper mapper = new ObjectMapper();
+          List<String> keys = new ArrayList<>();
+          String key = "";
 
           while (parser.nextToken() != null) {
             JsonToken token = parser.currentToken();
+            log.debug("TOKEN:{}", token);
             switch (token) {
-            case VALUE_STRING: {
-              log.debug("STRING:{}", parser.getText());
+            case FIELD_NAME: {
+              key = parser.getValueAsString();
             } break;
             case START_OBJECT: {
-              if (depth == 0) {
-                buffer = new TokenBuffer(parser);
+              if (depth > 0) {
+                keys.add(key);
+                log.debug("KEYS[{}]:{}", depth, keys);
+                if (String.valueOf(keys).endsWith("candidates, 0, content, parts, 0]")) {
+                  JsonNode node = mapper.readTree(parser);
+                  if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+                  if (node != null && node.has("text")) {
+                    String text = node.get("text").asText().trim();
+                    // log.info("TEXT:{}", node);
+                    onNext.accept(text);
+                  }
+                }
               }
               depth += 1;
             } break;
             case END_OBJECT: {
+              if (keys.size() > 0) { keys.remove(keys.size() - 1); }
               depth -= 1;
-                if (depth == 0 && buffer != null) {
-                  // 객체 하나 완성됨
-                  JsonNode node = mapper.readTree(buffer.asParser());
-                  log.debug("NODE:{}", node);
-                  buffer.close();
-                  buffer = null;
-                }
             } break;
+            case START_ARRAY: {
+              if (depth == 0) {
+              } else {
+                keys.add(key);
+              }
+              key = "0";
+              depth += 1;
+            } break;
+            case END_ARRAY: {
+              if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+              depth -= 1;
+            } break;
+            case VALUE_STRING:
             default:
-            }
-            if (buffer != null) {
-              buffer.copyCurrentEvent(parser);
             }
           }
           // LOOP: for (String rl; (rl = reader.readLine()) != null; cnt++) {
@@ -166,15 +201,16 @@ public class LLMApiGemini implements LLMApiBase {
           //   // }
           // }
           onComplete.run();
+          ret.add(Boolean.TRUE);
         } finally {
           try { con.disconnect(); } catch (Exception ignore) { }
           safeclose(reader);
-          safeclose(rstream);
           safeclose(istream);
         }
       } catch (Exception e) {
         log.warn("E:", e);
         onError.accept(e);
+        ret.add(Boolean.TRUE);
       }
     });
     // {
@@ -213,10 +249,10 @@ public class LLMApiGemini implements LLMApiBase {
     return ret;
   }
 
-  public static GeminiRequest createGeminiRequest(Map<String, String> request) {
+  public static GeminiRequest createGeminiRequest(Map<String, Object> request) {
     List<GeminiRequest.Content> contents = new ArrayList<>();
     for (String key : request.keySet()) {
-      GeminiRequest.Part part = new GeminiRequest.Part(request.get(key));
+      GeminiRequest.Part part = new GeminiRequest.Part(cast(request.get(key), ""));
       GeminiRequest.Content content = new GeminiRequest.Content(key, List.of(part));
       contents.add(content);
     }
