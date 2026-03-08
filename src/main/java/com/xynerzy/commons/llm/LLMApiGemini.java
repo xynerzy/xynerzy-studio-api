@@ -43,28 +43,34 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j @RequiredArgsConstructor
 public class LLMApiGemini implements LLMApiBase {
 
+  private long lastRequestTime;
   private final LLMProperties props;
-  // private final WebClient.Builder webClientBuilder;
 
   @Override
   public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
+    long DELAY = 1000;
+    long timeDiff = System.currentTimeMillis() - lastRequestTime;
+    if (timeDiff < DELAY) {
+      try {
+        Thread.sleep(DELAY - timeDiff);
+      } catch (Exception e) {
+        log.trace("E:", e);
+      }
+    }
     CoreSystem.executeBackground(() -> {
       String baseUrl = props.getBaseUrl();
       String template = props.getUriTemplate();
       if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
       if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
-      // final String TEMPLATE = template;
       List<Map<String, Object>> parts = new ArrayList<>();
-      // for (String k : request.keySet()) {
-        parts.add(map(
-          "role", "user",
-          "parts", 
-          list(
-            map("text", request.get("user"))
-          )
-        ));
-      // }
+      parts.add(map(
+        "role", "user",
+        "parts", 
+        list(
+          map("text", request.get("user"))
+        )
+      ));
       Map<String, Object> requestBody = map("contents", parts);
       if (request.containsKey("system")) {
         requestBody.put("system_instruction",
@@ -76,7 +82,6 @@ public class LLMApiGemini implements LLMApiBase {
           )
         );
       }
-      // GEMINI-REQUEST:{"contents":[{"role":"user","parts":[{"text":"Hello! Who are you?"}]}]}
       try {
         URL url = new URL(
           String.format("%s%s", baseUrl,
@@ -99,35 +104,36 @@ public class LLMApiGemini implements LLMApiBase {
         OutputStream ostream = null;
         InputStream istream = null;
         Reader reader = null;
+        int respcd = -1;
         try {
           ostream = con.getOutputStream();
           ostream.write(req.getBytes(UTF8));
+          respcd = con.getResponseCode();
         } finally {
           safeclose(ostream);
         }
-        log.info("START-REQUEST...");
+        log.info("START-REQUEST[{}]...", respcd);
+        switch (respcd) {
+        case 429: {
+          log.debug("TOO_MANY_REQUESTS..");
+          /* TODO: RETRY.. */
+        } break;
+        case 200: {
+        } break;
+        default:
+        }
         try {
           istream = con.getInputStream();
           reader = new InputStreamReader(istream, UTF8);
-          // {
-          //   java.io.BufferedReader breader = new java.io.BufferedReader(reader);
-          //   StringBuilder sb = new StringBuilder();
-          //   for (String rl; (rl = breader.readLine()) != null;) { sb.append(rl).append("\n"); }
-          //   breader.close();
-          //   reader.close();
-          //   log.debug("RESULT:{}", sb);
-          //   reader = new java.io.StringReader(String.valueOf(sb));
-          // }
           int depth = 0;
           JsonFactory factory = new JsonFactory();
           JsonParser parser = factory.createParser(reader);
           ObjectMapper mapper = new ObjectMapper();
           List<String> keys = new ArrayList<>();
           String key = "";
-
           while (parser.nextToken() != null) {
             JsonToken token = parser.currentToken();
-            log.debug("TOKEN:{}", token);
+            // log.debug("TOKEN:{}", token);
             switch (token) {
             case FIELD_NAME: {
               key = parser.getValueAsString();
@@ -135,8 +141,9 @@ public class LLMApiGemini implements LLMApiBase {
             case START_OBJECT: {
               if (depth > 0) {
                 keys.add(key);
-                log.debug("KEYS[{}]:{}", depth, keys);
-                if (String.valueOf(keys).endsWith("candidates, 0, content, parts, 0]")) {
+                // log.debug("KEYS[{}]:{}", depth, keys);
+                if (keys.size() == 6 && "candidates".equals(keys.get(1)) && "0".equals(keys.get(2)) &&
+                  "content".equals(keys.get(3)) && "parts".equals(keys.get(4)) && "0".equals(keys.get(5))) {
                   JsonNode node = mapper.readTree(parser);
                   if (keys.size() > 0) { keys.remove(keys.size() - 1); }
                   if (node != null && node.has("text")) {
@@ -149,7 +156,11 @@ public class LLMApiGemini implements LLMApiBase {
               depth += 1;
             } break;
             case END_OBJECT: {
-              if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+              if (keys.size() > 0) {
+                key = keys.remove(keys.size() - 1);
+              } else {
+                key = "";
+              }
               depth -= 1;
             } break;
             case START_ARRAY: {
@@ -161,45 +172,17 @@ public class LLMApiGemini implements LLMApiBase {
               depth += 1;
             } break;
             case END_ARRAY: {
-              if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+              if (keys.size() > 0) {
+                key = keys.remove(keys.size() - 1);
+              } else {
+                key = "";
+              }
               depth -= 1;
             } break;
             case VALUE_STRING:
             default:
             }
           }
-          // LOOP: for (String rl; (rl = reader.readLine()) != null; cnt++) {
-          //   log.debug(rl);
-          //   // String data = "";
-          //   // if (rl.startsWith("data:")) {
-          //   //   data = rl.substring(5).trim();
-          //   // } else if (rl.startsWith("\u007b")) {
-          //   //   /* {:007b ... }:007d */ 
-          //   //   data = rl;
-          //   // }
-          //   // if ("[DONE]".equals(data)) {
-          //   //   onNext.accept("\0\0");
-          //   //   // onComplete.run();
-          //   //   ret.add(Boolean.TRUE);
-          //   //   break LOOP;
-          //   // }
-          //   // if (data == null || "".equals(data)) { continue LOOP; }
-          //   // try {
-          //   //   log.trace("DATA:{}", data);
-          //   //   JSONObject json = new JSONObject(data);
-          //   //   String content = json.getJSONArray("choices")
-          //   //     .getJSONObject(0)
-          //   //     .getJSONObject("delta")
-          //   //     .optString("content");
-          //   //   if (content != null && !content.isEmpty()) {
-          //   //     onNext.accept(content);
-          //   //   }
-          //   // } catch (Exception e) {
-          //   //   onNext.accept("\0\0");
-          //   //   ret.add(e);
-          //   //   log.error("Error parsing stream data: {}", data, e);
-          //   // }
-          // }
           onComplete.run();
           ret.add(Boolean.TRUE);
         } finally {
@@ -212,40 +195,8 @@ public class LLMApiGemini implements LLMApiBase {
         onError.accept(e);
         ret.add(Boolean.TRUE);
       }
+      lastRequestTime = System.currentTimeMillis();
     });
-    // {
-    // WebClient webClient = webClientBuilder.baseUrl(baseUrl).build();
-    // GeminiRequest geminiRequest = createGeminiRequest(request);
-    // // try {
-    // //   log.debug("GEMINI-REQUEST:{}", new ObjectMapper().writeValueAsString(geminiRequest));
-    // // } catch (Exception ignore) { }
-    // // GEMINI-REQUEST:{"contents":[{"role":"user","parts":[{"text":"Hello! Who are you?"}]}]}
-    // final String TEMPLATE = template;
-    // webClient.post()
-    //   .uri(uriBuilder -> uriBuilder
-    //     .path(TEMPLATE.replaceAll("\\$\\{MODEL\\}", props.getModel()))
-    //     .queryParam("key", props.getApiKey())
-    //     .build())
-    //   .bodyValue(geminiRequest)
-    //   .retrieve()
-    //   .bodyToFlux(GeminiResponse.class)
-    //   .doOnNext(response -> {
-    //     // log.debug("NEXT:{}", response);
-    //     String text = response.extractText();
-    //     if (!text.isEmpty()) {
-    //       onNext.accept(text);
-    //     }
-    //   })
-    //   .doOnComplete(() -> {
-    //     onComplete.run();
-    //     ret.add(Boolean.TRUE);
-    //   })
-    //   .doOnError(e -> {
-    //     onError.accept(e);
-    //     ret.add(e);
-    //   })
-    //   .subscribe();
-    // }
     return ret;
   }
 

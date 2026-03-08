@@ -7,7 +7,6 @@
  **/
 package com.xynerzy.chatMessage.service;
 
-import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.DataUtil.valueOf;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 import static com.xynerzy.commons.StringUtil.concat;
@@ -71,18 +70,18 @@ public class ChatMessageServiceImpl implements ChatMessageService {
       {
         String messageId = UUID.randomUUID().toString();
         LLMProperties props = new LLMProperties();
+        LLMProperties props2 = new LLMProperties();
         props.setApiKey(System.getenv("GEMINI_API_KEY"));
         props.setModel(System.getenv("GEMINI_API_MODEL"));
-        // props.setBaseUrl(System.getenv("OPENAI_API_BASE_URL"));
-        // props.setModel(System.getenv("OPENAI_API_MODEL"));
-        // props.setApiKey(System.getenv("OPENAI_API_KEY"));
+        props2.setBaseUrl(System.getenv("OPENAI_API_BASE_URL"));
+        props2.setModel(System.getenv("OPENAI_API_MODEL"));
+        props2.setApiKey(System.getenv("OPENAI_API_KEY"));
 
-        // WebClient.Builder wbldr = WebClient.builder();
-        // LLMApiBase api = new LLMApiGemini(props, wbldr);
-        // LLMApiBase api = new LLMApiOpenAI(props);
         // log.debug("PROPS:{}", props);
+        // LLMApiBase api = new LLMApiOpenAI(props);
+        // LLMApiBase api2 = new LLMApiOpenAI(props);
         LLMApiBase api = new LLMApiGemini(props);
-        LLMApiBase api2 = new LLMApiGemini(props);
+        LLMApiBase api2 = new LLMApiOpenAI(props2);
         String sstr = cast(cctx.get("summary"), "");
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("user", content);
@@ -111,8 +110,8 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             if (sbuf.length() == 0) { return; }
             log.debug("REPLY:{} / {}", request.get("user"), sbuf);
             String reply = String.valueOf(sbuf);
-            sbuf.setLength(0);
             try {
+              sbuf.setLength(0);
               api2.streamChat(
                 Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \n%s\nA:%s\nB:%s", sstr, request.get("user"), reply)),
                 c -> {

@@ -54,7 +54,7 @@ public class LLMApiTest {
     // LLMApiBase api = new LLMApiOpenAI(props, wbldr);
     LLMApiBase api = new LLMApiOpenAI(props);
 
-    Map<String, String> request = Map.of("user", "Hello? Who are you?");
+    Map<String, Object> request = Map.of("user", "Hello? Who are you?");
     
     StringBuilder resp = new StringBuilder();
     /* Act */
@@ -126,7 +126,7 @@ public class LLMApiTest {
     WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiGeminiOAuth2(props, wbldr);
 
-    Map<String, String> request = Map.of("user", "Hello? Who are you?");
+    Map<String, Object> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
     /* Act */
@@ -157,7 +157,7 @@ public class LLMApiTest {
     WebClient.Builder wbldr = WebClient.builder();
     LLMApiOllama api = new LLMApiOllama(props, wbldr);
 
-    Map<String, String> request = Map.of("user", "Hello? Who are you?");
+    Map<String, Object> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
     /* Act */
