@@ -123,8 +123,8 @@ public class LLMApiTest {
     props.setRefreshToken(System.getenv("GEMINI_API_REFRESH_TOKEN"));
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
-    WebClient.Builder wbldr = WebClient.builder();
-    LLMApiBase api = new LLMApiGeminiOAuth2(props, wbldr);
+    // WebClient.Builder wbldr = WebClient.builder();
+    LLMApiBase api = new LLMApiGeminiOAuth2(props);
 
     Map<String, Object> request = Map.of("user", "Hello? Who are you?");
 

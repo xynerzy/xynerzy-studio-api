@@ -7,6 +7,8 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.CONTENT_TYPE;
+import static com.xynerzy.commons.Constants.CTYPE_JSON;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 
@@ -66,7 +68,7 @@ public class LLMApiOpenAI implements LLMApiBase {
         String req = new JSONObject(requestBody).toString();
         con.setRequestMethod("POST");
         con.setDoOutput(true);
-        con.setRequestProperty("Content-Type", "application/json");
+        con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
         if (props.getApiKey() != null) {
           con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + props.getApiKey());
         }
@@ -84,9 +86,8 @@ public class LLMApiOpenAI implements LLMApiBase {
           istream = con.getInputStream();
           rstream = new InputStreamReader(istream, StandardCharsets.UTF_8);
           reader = new BufferedReader(rstream);
-          int cnt = 0;
-          LOOP: for (String rl; (rl = reader.readLine()) != null; cnt++) {
-            log.debug(rl);
+          LOOP: for (String rl; (rl = reader.readLine()) != null;) {
+            // log.debug(rl);
             // if (cnt > 10) {
             //   con.disconnect();
             //   break LOOP;

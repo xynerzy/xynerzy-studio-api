@@ -7,18 +7,22 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.CONTENT_TYPE;
+import static com.xynerzy.commons.Constants.CTYPE_JSON;
 import static com.xynerzy.commons.Constants.UTF8;
 import static com.xynerzy.commons.DataUtil.list;
 import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.safeclose;
-import static com.xynerzy.commons.ReflectionUtil.cast;
 
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +31,6 @@ import java.util.function.Consumer;
 
 import org.json.JSONObject;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -35,8 +38,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xynerzy.system.runtime.CoreSystem;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,7 +50,7 @@ public class LLMApiGemini implements LLMApiBase {
   @Override
   public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
-    long DELAY = 1000;
+    long DELAY = 1500;
     long timeDiff = System.currentTimeMillis() - lastRequestTime;
     if (timeDiff < DELAY) {
       try {
@@ -91,26 +92,32 @@ public class LLMApiGemini implements LLMApiBase {
         );
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         /* Set the connection timeout to 10 seconds. */
-        con.setConnectTimeout(10000);
-        con.setReadTimeout(10000);
+        con.setConnectTimeout(50000);
+        con.setReadTimeout(50000);
         String req = new JSONObject(requestBody).toString();
         log.debug("REQUEST-BODY:{}", req);
         con.setRequestMethod("POST");
         con.setDoOutput(true);
-        con.setRequestProperty("Content-Type", "application/json");
+        con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
         if (props.getApiKey() != null) {
           con.setRequestProperty("x-goog-api-key", props.getApiKey());
         }
-        OutputStream ostream = null;
-        InputStream istream = null;
+        InputStream istrm = null;
+        OutputStream ostrm = null;
         Reader reader = null;
+        WritableByteChannel wchnl = null;
+        ReadableByteChannel rchnl = null;
         int respcd = -1;
+        ByteBuffer btbuf = null;
         try {
-          ostream = con.getOutputStream();
-          ostream.write(req.getBytes(UTF8));
+          wchnl = Channels.newChannel(ostrm = con.getOutputStream());
+          btbuf = ByteBuffer.wrap(req.getBytes(UTF8));
+          wchnl.write(btbuf);
           respcd = con.getResponseCode();
         } finally {
-          safeclose(ostream);
+          if (btbuf != null) { btbuf.clear(); }
+          safeclose(wchnl);
+          safeclose(ostrm);
         }
         log.info("START-REQUEST[{}]...", respcd);
         switch (respcd) {
@@ -123,8 +130,8 @@ public class LLMApiGemini implements LLMApiBase {
         default:
         }
         try {
-          istream = con.getInputStream();
-          reader = new InputStreamReader(istream, UTF8);
+          reader = Channels.newReader(
+            rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
           int depth = 0;
           JsonFactory factory = new JsonFactory();
           JsonParser parser = factory.createParser(reader);
@@ -188,7 +195,8 @@ public class LLMApiGemini implements LLMApiBase {
         } finally {
           try { con.disconnect(); } catch (Exception ignore) { }
           safeclose(reader);
-          safeclose(istream);
+          safeclose(rchnl);
+          safeclose(istrm);
         }
       } catch (Exception e) {
         log.warn("E:", e);
@@ -198,65 +206,5 @@ public class LLMApiGemini implements LLMApiBase {
       lastRequestTime = System.currentTimeMillis();
     });
     return ret;
-  }
-
-  public static GeminiRequest createGeminiRequest(Map<String, Object> request) {
-    List<GeminiRequest.Content> contents = new ArrayList<>();
-    for (String key : request.keySet()) {
-      GeminiRequest.Part part = new GeminiRequest.Part(cast(request.get(key), ""));
-      GeminiRequest.Content content = new GeminiRequest.Content(key, List.of(part));
-      contents.add(content);
-    }
-    return new GeminiRequest(contents);
-  }
-    
-  /* Request body Data model of Gemini API */
-  @Data @AllArgsConstructor
-  public static class GeminiRequest {
-    private List<Content> contents;
-
-    @Data @AllArgsConstructor
-    public static class Content {
-      private String role;
-      private List<Part> parts;
-    }
-
-    @Data @AllArgsConstructor
-    public static class Part {
-      private String text;
-    }
-  }
-
-  /* Response body Data model of Gemini API */
-  @Data @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class GeminiResponse {
-    private List<Candidate> candidates;
-
-    @Data @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Candidate {
-      private Content content;
-    }
-
-    @Data @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Content {
-      private List<Part> parts;
-      private String role;
-    }
-
-    @Data @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Part {
-      private String text;
-    }
-
-    /* Extracting text from response */
-    public String extractText() {
-      if (candidates != null && !candidates.isEmpty()) {
-        Content content = candidates.get(0).getContent();
-        if (content != null && content.getParts() != null && !content.getParts().isEmpty()) {
-          return content.getParts().get(0).getText();
-        }
-      }
-      return "";
-    }
   }
 }

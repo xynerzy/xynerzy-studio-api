@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
 import com.xynerzy.commons.llm.LLMApiBase;
 import com.xynerzy.commons.llm.LLMApiGemini;
-import com.xynerzy.commons.llm.LLMApiOpenAI;
 import com.xynerzy.commons.llm.LLMProperties;
 import com.xynerzy.main.entity.MainEntity;
 
@@ -80,8 +79,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         // log.debug("PROPS:{}", props);
         // LLMApiBase api = new LLMApiOpenAI(props);
         // LLMApiBase api2 = new LLMApiOpenAI(props);
+        // LLMApiBase api = new LLMApiGemini(props);
+        // LLMApiBase api2 = new LLMApiOpenAI(props2);
         LLMApiBase api = new LLMApiGemini(props);
-        LLMApiBase api2 = new LLMApiOpenAI(props2);
         String sstr = cast(cctx.get("summary"), "");
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("user", content);
@@ -112,7 +112,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             String reply = String.valueOf(sbuf);
             try {
               sbuf.setLength(0);
-              api2.streamChat(
+              api.streamChat(
                 Map.of("user", String.format("Summarize this conversation in 1000 characters or less. \n%s\nA:%s\nB:%s", sstr, request.get("user"), reply)),
                 c -> {
                   // log.debug("C:{}", c);
