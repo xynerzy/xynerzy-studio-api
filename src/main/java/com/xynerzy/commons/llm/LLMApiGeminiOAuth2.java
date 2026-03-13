@@ -7,9 +7,41 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.CONTENT_TYPE;
+import static com.xynerzy.commons.Constants.CTYPE_JSON;
+import static com.xynerzy.commons.Constants.UTF8;
+import static com.xynerzy.commons.DataUtil.list;
+import static com.xynerzy.commons.DataUtil.map;
+import static com.xynerzy.commons.IOUtil.readAsString;
+import static com.xynerzy.commons.IOUtil.safeclose;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
+
+import org.json.JSONObject;
+import org.springframework.http.HttpHeaders;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.xynerzy.system.runtime.CoreSystem;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,55 +50,207 @@ import lombok.extern.slf4j.Slf4j;
 public class LLMApiGeminiOAuth2 implements LLMApiBase {
 
   private final LLMProperties props;
-  // private final WebClient.Builder webClientBuilder;
+  private long lastRequestTime;
 
-  @Override
-  public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
-    return streamChatWithOauth2(request, onNext, onComplete, onError);
-  }
-
-  private LinkedBlockingQueue<Object> streamChatWithOauth2(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  @Override public LinkedBlockingQueue<Object> streamChat(
+    Map<String, Object> rqst,
+    Consumer<String> onNext,
+    Runnable onComplete,
+    Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
-    try {
-      // /* 1. Issue an access token using a refresh token */
-      // String baseUrl = props.getBaseUrl();
-      // String template = props.getUriTemplate();
-      // if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
-      // if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
-      // String accessToken = new GoogleRefreshTokenRequest(
-      //   new NetHttpTransport(),
-      //   new GsonFactory(),
-      //   props.getRefreshToken(),
-      //   props.getClientId(),
-      //   props.getClientSecret())
-      //   .execute()
-      //   .getAccessToken();
-      // /* 2. Call the API using the issued access token. */
-      // WebClient webClient = webClientBuilder.baseUrl(baseUrl)
-      //   .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-      //   .build();
-      // GeminiRequest geminiRequest = LLMApiGemini.createGeminiRequest(request);
-      // final String TEMPLATE = template;
-      // webClient.post()
-      //   .uri(TEMPLATE.replaceAll("\\$\\{MODEL\\}", props.getModel()))
-      //   .bodyValue(geminiRequest)
-      //   .retrieve()
-      //   .bodyToFlux(GeminiResponse.class)
-      //   .doOnNext(response -> onNext.accept(response.extractText()))
-      //   .doOnComplete(() -> {
-      //     onComplete.run();
-      //     ret.add(Boolean.TRUE);
-      //   })
-      //   .doOnError(e -> {
-      //     onError.accept(e);
-      //     ret.add(e);
-      //   })
-      //   .subscribe();
-    } catch (Exception e) {
-      log.error("Failed to refresh access token", e);
-      onError.accept(e);
-      ret.add(e);
-    }
+    long DELAY = 1500;
+    int MAX_RETRY = 3;
+    CoreSystem.executeBackground(() -> {
+      long timeDiff = System.currentTimeMillis() - lastRequestTime;
+      String baseUrl = props.getBaseUrl();
+      String template = props.getUriTemplate();
+      if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
+      if (template == null || "".equals(template)) { template = "/v1beta/models/${MODEL}:streamGenerateContent"; }
+      List<Map<String, Object>> usr = new ArrayList<>();
+      List<Map<String, Object>> sys = new ArrayList<>();
+      for (String k : rqst.keySet()) {
+        switch (k) {
+        case "user": {
+          usr.add(map("text", rqst.get("user")));
+        } break;
+        default:
+          sys.add(map("text", rqst.get("user")));
+        }
+      }
+      Map<String, Object> rqmap = map(
+        "contents",
+        list(map("role", "user", "parts", usr))
+      );
+      if (sys.size() > 0) {
+        rqmap.put(
+          "system_instruction",
+          map(
+            "parts",
+            list(map("text", rqst.get("system")))
+          )
+        );
+      }
+      /* Issue an access token using a refresh token */
+      String accessToken = "";
+      try {
+        accessToken = new GoogleRefreshTokenRequest(
+          new NetHttpTransport(),
+          new GsonFactory(),
+          props.getRefreshToken(),
+          props.getClientId(),
+          props.getClientSecret())
+          .execute()
+          .getAccessToken();
+      } catch (Exception e) {
+        log.info("Can't issue access-token");
+        onError.accept(e);
+        ret.add(e);
+      }
+      RETRY: for (int retry = 0; retry < MAX_RETRY; retry++) {
+        try {
+          if (timeDiff < DELAY) {
+            try {
+              Thread.sleep(DELAY - timeDiff);
+            } catch (Exception e) {
+              log.trace("E:", e);
+            }
+          }
+          URL url = new URL(
+            String.format("%s%s", baseUrl,
+              template.replaceAll("\\$\\{MODEL\\}", props.getModel())
+              // props.getApiKey() != null ? "?key=" + props.getApiKey() : ""
+            )
+          );
+          HttpURLConnection con = (HttpURLConnection) url.openConnection();
+          /* Set the connection timeout to 10 seconds. */
+          con.setConnectTimeout(50000);
+          con.setReadTimeout(50000);
+          con.setRequestMethod("POST");
+          con.setDoInput(true);
+          con.setDoOutput(true);
+          con.setInstanceFollowRedirects(true);
+          con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
+          if (accessToken != null) {
+            log.debug("ACCTOKEN:{}", accessToken);
+            /* Call the API using the issued access token. */
+            con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+          }
+          InputStream istrm = null;
+          OutputStream ostrm = null;
+          Reader reader = null;
+          WritableByteChannel wchnl = null;
+          ReadableByteChannel rchnl = null;
+          int respcd = -1;
+          ByteBuffer btbuf = null;
+          try {
+            // log.debug("REQUEST-BODY:{}", rqmap);
+            wchnl = Channels.newChannel(ostrm = con.getOutputStream());
+            btbuf = ByteBuffer.wrap(new JSONObject(rqmap).toString().getBytes(UTF8));
+            wchnl.write(btbuf);
+            respcd = con.getResponseCode();
+          } finally {
+            if (btbuf != null) { btbuf.clear(); }
+            safeclose(wchnl);
+            safeclose(ostrm);
+          }
+          log.info("START-REQUEST[{}]...", respcd);
+          switch (respcd) {
+          case 429: {
+            log.debug("TOO_MANY_REQUESTS..");
+            continue RETRY;
+          }
+          case 200: {
+          } break;
+          default:
+            reader = Channels.newReader(
+              rchnl = Channels.newChannel(istrm = con.getErrorStream()), UTF8);
+            String msg = readAsString(reader);
+            log.info("ERR:{}", msg);
+            onError.accept(new RuntimeException(msg));
+            ret.add(true);
+            break RETRY;
+          }
+          try {
+            reader = Channels.newReader(
+              rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
+            int depth = 0;
+            JsonFactory factory = new JsonFactory();
+            JsonParser parser = factory.createParser(reader);
+            ObjectMapper mapper = new ObjectMapper();
+            List<String> keys = new ArrayList<>();
+            String key = "";
+            while (parser.nextToken() != null) {
+              JsonToken token = parser.currentToken();
+              // log.debug("TOKEN:{}", token);
+              switch (token) {
+              case FIELD_NAME: {
+                key = parser.getValueAsString();
+              } break;
+              case START_OBJECT: {
+                if (depth > 0) {
+                  keys.add(key);
+                  // log.debug("KEYS[{}]:{}", depth, keys);
+                  if (keys.size() == 6 && "candidates".equals(keys.get(1)) && "0".equals(keys.get(2)) &&
+                    "content".equals(keys.get(3)) && "parts".equals(keys.get(4)) && "0".equals(keys.get(5))) {
+                    JsonNode node = mapper.readTree(parser);
+                    if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+                    if (node != null && node.has("text")) {
+                      String text = node.get("text").asText().trim();
+                      // log.info("TEXT:{}", node);
+                      onNext.accept(text);
+                    }
+                  }
+                }
+                depth += 1;
+              } break;
+              case END_OBJECT: {
+                if (keys.size() > 0) {
+                  key = keys.remove(keys.size() - 1);
+                } else {
+                  key = "";
+                }
+                depth -= 1;
+              } break;
+              case START_ARRAY: {
+                if (depth == 0) {
+                } else {
+                  keys.add(key);
+                }
+                key = "0";
+                depth += 1;
+              } break;
+              case END_ARRAY: {
+                if (keys.size() > 0) {
+                  key = keys.remove(keys.size() - 1);
+                } else {
+                  key = "";
+                }
+                depth -= 1;
+              } break;
+              case VALUE_STRING:
+              default:
+              }
+            }
+            lastRequestTime = System.currentTimeMillis();
+            onComplete.run();
+            ret.add(Boolean.TRUE);
+            break RETRY;
+          } finally {
+            try { con.disconnect(); } catch (Exception ignore) { }
+            safeclose(reader);
+            safeclose(rchnl);
+            safeclose(istrm);
+          }
+        } catch (Exception e) {
+          log.warn("E:", e);
+          onError.accept(e);
+          ret.add(Boolean.TRUE);
+        }
+        if (retry == MAX_RETRY - 1) {
+          ret.add(Boolean.TRUE);
+        }
+      }
+    });
     return ret;
   }
 }

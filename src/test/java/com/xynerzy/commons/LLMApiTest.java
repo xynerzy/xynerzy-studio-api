@@ -130,6 +130,7 @@ public class LLMApiTest {
     Map<String, Object> request = Map.of("user", "Hello? Who are you?");
 
     StringBuilder resp = new StringBuilder();
+    CoreSystem.getInstance(new StandardEnvironment());
     /* Act */
     log.info("Sending request to Gemini API with OAuth2...");
     LinkedBlockingQueue<Object> latch = api.streamChat(
