@@ -51,15 +51,9 @@ public class LLMApiGemini implements LLMApiBase {
   public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
     long DELAY = 1500;
-    long timeDiff = System.currentTimeMillis() - lastRequestTime;
-    if (timeDiff < DELAY) {
-      try {
-        Thread.sleep(DELAY - timeDiff);
-      } catch (Exception e) {
-        log.trace("E:", e);
-      }
-    }
+    int MAX_RETRY = 3;
     CoreSystem.executeBackground(() -> {
+      long timeDiff = System.currentTimeMillis() - lastRequestTime;
       String baseUrl = props.getBaseUrl();
       String template = props.getUriTemplate();
       if (baseUrl == null || "".equals(baseUrl)) { baseUrl = "https://generativelanguage.googleapis.com"; }
@@ -83,127 +77,141 @@ public class LLMApiGemini implements LLMApiBase {
           )
         );
       }
-      try {
-        URL url = new URL(
-          String.format("%s%s", baseUrl,
-            template.replaceAll("\\$\\{MODEL\\}", props.getModel())
-            // props.getApiKey() != null ? "?key=" + props.getApiKey() : ""
-          )
-        );
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        /* Set the connection timeout to 10 seconds. */
-        con.setConnectTimeout(50000);
-        con.setReadTimeout(50000);
-        String req = new JSONObject(requestBody).toString();
-        log.debug("REQUEST-BODY:{}", req);
-        con.setRequestMethod("POST");
-        con.setDoOutput(true);
-        con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
-        if (props.getApiKey() != null) {
-          con.setRequestProperty("x-goog-api-key", props.getApiKey());
-        }
-        InputStream istrm = null;
-        OutputStream ostrm = null;
-        Reader reader = null;
-        WritableByteChannel wchnl = null;
-        ReadableByteChannel rchnl = null;
-        int respcd = -1;
-        ByteBuffer btbuf = null;
+      RETRY: for (int retry = 0; retry < MAX_RETRY; retry++) {
         try {
-          wchnl = Channels.newChannel(ostrm = con.getOutputStream());
-          btbuf = ByteBuffer.wrap(req.getBytes(UTF8));
-          wchnl.write(btbuf);
-          respcd = con.getResponseCode();
-        } finally {
-          if (btbuf != null) { btbuf.clear(); }
-          safeclose(wchnl);
-          safeclose(ostrm);
-        }
-        log.info("START-REQUEST[{}]...", respcd);
-        switch (respcd) {
-        case 429: {
-          log.debug("TOO_MANY_REQUESTS..");
-          /* TODO: RETRY.. */
-        } break;
-        case 200: {
-        } break;
-        default:
-        }
-        try {
-          reader = Channels.newReader(
-            rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
-          int depth = 0;
-          JsonFactory factory = new JsonFactory();
-          JsonParser parser = factory.createParser(reader);
-          ObjectMapper mapper = new ObjectMapper();
-          List<String> keys = new ArrayList<>();
-          String key = "";
-          while (parser.nextToken() != null) {
-            JsonToken token = parser.currentToken();
-            // log.debug("TOKEN:{}", token);
-            switch (token) {
-            case FIELD_NAME: {
-              key = parser.getValueAsString();
-            } break;
-            case START_OBJECT: {
-              if (depth > 0) {
-                keys.add(key);
-                // log.debug("KEYS[{}]:{}", depth, keys);
-                if (keys.size() == 6 && "candidates".equals(keys.get(1)) && "0".equals(keys.get(2)) &&
-                  "content".equals(keys.get(3)) && "parts".equals(keys.get(4)) && "0".equals(keys.get(5))) {
-                  JsonNode node = mapper.readTree(parser);
-                  if (keys.size() > 0) { keys.remove(keys.size() - 1); }
-                  if (node != null && node.has("text")) {
-                    String text = node.get("text").asText().trim();
-                    // log.info("TEXT:{}", node);
-                    onNext.accept(text);
-                  }
-                }
-              }
-              depth += 1;
-            } break;
-            case END_OBJECT: {
-              if (keys.size() > 0) {
-                key = keys.remove(keys.size() - 1);
-              } else {
-                key = "";
-              }
-              depth -= 1;
-            } break;
-            case START_ARRAY: {
-              if (depth == 0) {
-              } else {
-                keys.add(key);
-              }
-              key = "0";
-              depth += 1;
-            } break;
-            case END_ARRAY: {
-              if (keys.size() > 0) {
-                key = keys.remove(keys.size() - 1);
-              } else {
-                key = "";
-              }
-              depth -= 1;
-            } break;
-            case VALUE_STRING:
-            default:
+          if (timeDiff < DELAY) {
+            try {
+              Thread.sleep(DELAY - timeDiff);
+            } catch (Exception e) {
+              log.trace("E:", e);
             }
           }
-          onComplete.run();
+          URL url = new URL(
+            String.format("%s%s", baseUrl,
+              template.replaceAll("\\$\\{MODEL\\}", props.getModel())
+              // props.getApiKey() != null ? "?key=" + props.getApiKey() : ""
+            )
+          );
+          HttpURLConnection con = (HttpURLConnection) url.openConnection();
+          /* Set the connection timeout to 10 seconds. */
+          con.setConnectTimeout(50000);
+          con.setReadTimeout(50000);
+          String req = new JSONObject(requestBody).toString();
+          log.debug("REQUEST-BODY:{}", req);
+          con.setRequestMethod("POST");
+          con.setDoInput(true);
+          con.setDoOutput(true);
+          con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
+          if (props.getApiKey() != null) {
+            con.setRequestProperty("x-goog-api-key", props.getApiKey());
+          }
+          InputStream istrm = null;
+          OutputStream ostrm = null;
+          Reader reader = null;
+          WritableByteChannel wchnl = null;
+          ReadableByteChannel rchnl = null;
+          int respcd = -1;
+          ByteBuffer btbuf = null;
+          try {
+            wchnl = Channels.newChannel(ostrm = con.getOutputStream());
+            btbuf = ByteBuffer.wrap(req.getBytes(UTF8));
+            wchnl.write(btbuf);
+            respcd = con.getResponseCode();
+          } finally {
+            if (btbuf != null) { btbuf.clear(); }
+            safeclose(wchnl);
+            safeclose(ostrm);
+          }
+          log.info("START-REQUEST[{}]...", respcd);
+          switch (respcd) {
+          case 429: {
+            log.debug("TOO_MANY_REQUESTS..");
+            continue RETRY;
+          }
+          case 200: {
+          } break;
+          default:
+          }
+          try {
+            reader = Channels.newReader(
+              rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
+            int depth = 0;
+            JsonFactory factory = new JsonFactory();
+            JsonParser parser = factory.createParser(reader);
+            ObjectMapper mapper = new ObjectMapper();
+            List<String> keys = new ArrayList<>();
+            String key = "";
+            while (parser.nextToken() != null) {
+              JsonToken token = parser.currentToken();
+              // log.debug("TOKEN:{}", token);
+              switch (token) {
+              case FIELD_NAME: {
+                key = parser.getValueAsString();
+              } break;
+              case START_OBJECT: {
+                if (depth > 0) {
+                  keys.add(key);
+                  // log.debug("KEYS[{}]:{}", depth, keys);
+                  if (keys.size() == 6 && "candidates".equals(keys.get(1)) && "0".equals(keys.get(2)) &&
+                    "content".equals(keys.get(3)) && "parts".equals(keys.get(4)) && "0".equals(keys.get(5))) {
+                    JsonNode node = mapper.readTree(parser);
+                    if (keys.size() > 0) { keys.remove(keys.size() - 1); }
+                    if (node != null && node.has("text")) {
+                      String text = node.get("text").asText().trim();
+                      // log.info("TEXT:{}", node);
+                      onNext.accept(text);
+                    }
+                  }
+                }
+                depth += 1;
+              } break;
+              case END_OBJECT: {
+                if (keys.size() > 0) {
+                  key = keys.remove(keys.size() - 1);
+                } else {
+                  key = "";
+                }
+                depth -= 1;
+              } break;
+              case START_ARRAY: {
+                if (depth == 0) {
+                } else {
+                  keys.add(key);
+                }
+                key = "0";
+                depth += 1;
+              } break;
+              case END_ARRAY: {
+                if (keys.size() > 0) {
+                  key = keys.remove(keys.size() - 1);
+                } else {
+                  key = "";
+                }
+                depth -= 1;
+              } break;
+              case VALUE_STRING:
+              default:
+              }
+            }
+            lastRequestTime = System.currentTimeMillis();
+            onComplete.run();
+            ret.add(Boolean.TRUE);
+            break RETRY;
+          } finally {
+            try { con.disconnect(); } catch (Exception ignore) { }
+            safeclose(reader);
+            safeclose(rchnl);
+            safeclose(istrm);
+          }
+        } catch (Exception e) {
+          log.warn("E:", e);
+          onError.accept(e);
           ret.add(Boolean.TRUE);
-        } finally {
-          try { con.disconnect(); } catch (Exception ignore) { }
-          safeclose(reader);
-          safeclose(rchnl);
-          safeclose(istrm);
         }
-      } catch (Exception e) {
-        log.warn("E:", e);
-        onError.accept(e);
-        ret.add(Boolean.TRUE);
+        if (retry == MAX_RETRY - 1) {
+          ret.add(Boolean.TRUE);
+        }
       }
-      lastRequestTime = System.currentTimeMillis();
     });
     return ret;
   }

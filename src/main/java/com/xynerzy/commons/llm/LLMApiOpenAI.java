@@ -9,6 +9,7 @@ package com.xynerzy.commons.llm;
 
 import static com.xynerzy.commons.Constants.CONTENT_TYPE;
 import static com.xynerzy.commons.Constants.CTYPE_JSON;
+import static com.xynerzy.commons.Constants.UTF8;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 
@@ -18,7 +19,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,22 +54,27 @@ public class LLMApiOpenAI implements LLMApiBase {
         "messages", parts,
         "temperature", 0.7,
         "top_p", 0.9,
-        "repeat_penalty", 1.2,
-        "num_predict", 1024,
+        // "repeat_penalty", 1.2,
+        // "num_predict", 1024,
         // "max_tokens", 512,
         "stream", true
       );
       try {
+        // log.debug("PROPS:{}", props);
         URL url = new URL(String.format("%s%s", props.getBaseUrl(), "/chat/completions"));
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         /* Set the connection timeout to 5 seconds. */
         con.setConnectTimeout(5000);
         con.setReadTimeout(5000);
         String req = new JSONObject(requestBody).toString();
+        // log.debug("REQ:{}", req);
         con.setRequestMethod("POST");
+        con.setDoInput(true);
         con.setDoOutput(true);
+        con.setInstanceFollowRedirects(true);
         con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
         if (props.getApiKey() != null) {
+          // log.info("API-KEY:{}", props.getApiKey());
           con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + props.getApiKey());
         }
         OutputStream ostream = null;
@@ -78,13 +83,14 @@ public class LLMApiOpenAI implements LLMApiBase {
         BufferedReader reader = null;
         try {
           ostream = con.getOutputStream();
-          ostream.write(req.getBytes(StandardCharsets.UTF_8));
+          ostream.write(req.getBytes(UTF8));
+          ostream.flush();
         } finally {
           safeclose(ostream);
         }
         try {
           istream = con.getInputStream();
-          rstream = new InputStreamReader(istream, StandardCharsets.UTF_8);
+          rstream = new InputStreamReader(istream, UTF8);
           reader = new BufferedReader(rstream);
           LOOP: for (String rl; (rl = reader.readLine()) != null;) {
             // log.debug(rl);
