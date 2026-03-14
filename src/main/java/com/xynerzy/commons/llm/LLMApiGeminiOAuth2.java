@@ -105,7 +105,7 @@ public class LLMApiGeminiOAuth2 implements LLMApi {
       } catch (Exception e) {
         log.info("Can't issue access-token");
         onError.accept(e);
-        ret.add(e);
+        ret.add(true);
       }
       RETRY: for (int retry = 0; retry < MAX_RETRY; retry++) {
         try {
@@ -172,6 +172,7 @@ public class LLMApiGeminiOAuth2 implements LLMApi {
             break RETRY;
           }
           try {
+            long ltime = System.currentTimeMillis();
             reader = Channels.newReader(
               rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
             int depth = 0;
@@ -199,6 +200,11 @@ public class LLMApiGeminiOAuth2 implements LLMApi {
                       String text = node.get("text").asText().trim();
                       // log.info("TEXT:{}", node);
                       onNext.accept(text);
+                      long ctime = System.currentTimeMillis();
+                      if (ctime - ltime > 3000) {
+                        log.debug("STILL RESPONDING..");
+                        ltime = ctime;
+                      }
                     }
                   }
                 }
@@ -234,7 +240,7 @@ public class LLMApiGeminiOAuth2 implements LLMApi {
             }
             lastRequestTime = System.currentTimeMillis();
             onComplete.run();
-            ret.add(Boolean.TRUE);
+            ret.add(true);
             break RETRY;
           } finally {
             try { con.disconnect(); } catch (Exception ignore) { }
@@ -245,10 +251,10 @@ public class LLMApiGeminiOAuth2 implements LLMApi {
         } catch (Exception e) {
           log.warn("E:", e);
           onError.accept(e);
-          ret.add(Boolean.TRUE);
+          ret.add(true);
         }
         if (retry == MAX_RETRY - 1) {
-          ret.add(Boolean.TRUE);
+          ret.add(true);
         }
       }
     });

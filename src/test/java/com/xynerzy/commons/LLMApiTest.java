@@ -264,22 +264,16 @@ public class LLMApiTest {
       talk.setLength(0);
       latch = apiList.get(0).streamChat(
         map("user", q, "system", String.format("%s", summary1)),
-        v -> {
-          log.trace("V:{}", v);
-          talk.append(v);
-        }, () -> { }, e -> { });
-      while(!Boolean.TRUE.equals(latch.poll(300, TimeUnit.MILLISECONDS)));
+        v -> talk.append(v), () -> { }, e -> { });
+      while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
       a = String.valueOf(talk);
       log.debug("Q:{} / A:{}", q, a);
       talk.setLength(0);
       q = a;
       latch = apiList.get(1).streamChat(
         map("user", q, "system", String.format("%s", summary2)),
-        v -> {
-          log.trace("V:{}", v);
-          talk.append(v);
-        }, () -> { }, e -> { });
-      while(!Boolean.TRUE.equals(latch.poll(300, TimeUnit.MILLISECONDS)));
+        v -> talk.append(v), () -> { }, e -> { });
+      while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
       a = String.valueOf(talk);
       log.debug("Q:{} / A:{}", q, a);
       talk.setLength(0);

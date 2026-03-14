@@ -130,6 +130,7 @@ public class LLMApiOpenAI implements LLMApi {
             break RETRY;
           }
           try {
+            long ltime = System.currentTimeMillis();
             reader = Channels.newReader(
               rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
             bfrdr = new BufferedReader(reader);
@@ -165,15 +166,20 @@ public class LLMApiOpenAI implements LLMApi {
                   .optString("content");
                 if (content != null && !content.isEmpty()) {
                   onNext.accept(content);
+                  long ctime = System.currentTimeMillis();
+                  if (ctime - ltime > 3000) {
+                    log.debug("STILL RESPONDING..");
+                    ltime = ctime;
+                  }
                 }
               } catch (Exception e) {
                 onNext.accept("\0\0");
-                ret.add(e);
+                ret.add(true);
                 log.error("Error parsing stream data: {}", data, e);
               }
             }
             onComplete.run();
-            ret.add(Boolean.TRUE);
+            ret.add(true);
             break RETRY;
           } finally {
             try { con.disconnect(); } catch (Exception ignore) { }
@@ -185,10 +191,10 @@ public class LLMApiOpenAI implements LLMApi {
         } catch (Exception e) {
           log.warn("E:", e);
           onError.accept(e);
-          ret.add(Boolean.TRUE);
+          ret.add(true);
         }
         if (retry == MAX_RETRY - 1) {
-          ret.add(Boolean.TRUE);
+          ret.add(true);
         }
       }
     });
