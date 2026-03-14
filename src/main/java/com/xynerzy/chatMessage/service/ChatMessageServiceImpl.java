@@ -24,7 +24,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
-import com.xynerzy.commons.llm.LLMApiBase;
+import com.xynerzy.commons.llm.LLMApi;
 import com.xynerzy.commons.llm.LLMApiGemini;
 import com.xynerzy.commons.llm.LLMApiGeminiOAuth2;
 import com.xynerzy.commons.llm.LLMApiOllama;
@@ -84,12 +84,10 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         props3.setModel(System.getenv("OLLAMA_API_MODEL"));
         log.trace("ENABLED-API:{}", list(LLMApiOpenAI.class, LLMApiGemini.class, LLMApiGeminiOAuth2.class, LLMApiOllama.class));
         // log.debug("PROPS:{}", props);
-        // LLMApiBase api = new LLMApiOpenAI(props);
-        // LLMApiBase api2 = new LLMApiOpenAI(props);
         // LLMApiBase api = new LLMApiGemini(props);
-        // LLMApiBase api2 = new LLMApiOpenAI(props2);
-        // LLMApiBase api = new LLMApiGemini(props);
-        LLMApiBase api = new LLMApiOpenAI(props2);
+        // LLMApiBase api = new LLMApiGeminiOAuth2(props);
+        // LLMApiBase api = new LLMApiOpenAI(props2);
+        LLMApi api = new LLMApiOllama(props3);
         String sstr = cast(cctx.get("summary"), "");
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("user", content);

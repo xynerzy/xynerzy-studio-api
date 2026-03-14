@@ -45,7 +45,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @RequiredArgsConstructor
-public class LLMApiGeminiOAuth2 implements LLMApiBase {
+public class LLMApiGeminiOAuth2 implements LLMApi {
 
   private final LLMProperties props;
   private long lastRequestTime;

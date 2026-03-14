@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 /* LLM API Base Interface */
-public interface LLMApiBase {
+public interface LLMApi {
   /* Process streaming messages */
   default LinkedBlockingQueue<Object> streamChat(Map<String, Object> msg, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) { return null; }
 }

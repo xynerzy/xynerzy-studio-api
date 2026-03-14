@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j @RequiredArgsConstructor
-public class LLMApiOpenAI implements LLMApiBase {
+public class LLMApiOpenAI implements LLMApi {
 
   private final LLMProperties props;
   private long lastRequestTime;

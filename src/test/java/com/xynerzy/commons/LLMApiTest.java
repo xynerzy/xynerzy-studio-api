@@ -7,6 +7,7 @@
  **/
 package com.xynerzy.commons;
 
+import static com.xynerzy.commons.DataUtil.list;
 import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,7 +29,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xynerzy.commons.TestUtil.TestLevel;
-import com.xynerzy.commons.llm.LLMApiBase;
+import com.xynerzy.commons.llm.LLMApi;
 import com.xynerzy.commons.llm.LLMApiGemini;
 import com.xynerzy.commons.llm.LLMApiGeminiOAuth2;
 import com.xynerzy.commons.llm.LLMApiOllama;
@@ -49,7 +50,7 @@ public class LLMApiTest {
     props.setModel(System.getenv("OPENAI_API_MODEL"));
     props.setApiKey(System.getenv("OPENAI_API_KEY"));
 
-    LLMApiBase api = new LLMApiOpenAI(props);
+    LLMApi api = new LLMApiOpenAI(props);
     CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map("user", "Hello? Who are you?");
@@ -86,7 +87,7 @@ public class LLMApiTest {
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
 
-    LLMApiBase api = new LLMApiGemini(props);
+    LLMApi api = new LLMApiGemini(props);
     CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map(
@@ -120,7 +121,7 @@ public class LLMApiTest {
     props.setRefreshToken(System.getenv("GEMINI_API_REFRESH_TOKEN"));
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
-    LLMApiBase api = new LLMApiGeminiOAuth2(props);
+    LLMApi api = new LLMApiGeminiOAuth2(props);
     CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map("user", "Hello? Who are you?");
@@ -177,6 +178,7 @@ public class LLMApiTest {
   }
 
   @Test public void readJSONTest() throws Exception {
+    if (!TestUtil.isEnabled("readJSONTest", TestLevel.MANUAL)) { return; }
     String data = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello! I am a large language model, trained by Google.\"},{\"text\":\"How was your day?.\"}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":7,\"candidatesTokenCount\":13,\"totalTokenCount\":48,\"promptTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":7}],\"thoughtsTokenCount\":28},\"modelVersion\":\"gemini-2.5-flash\",\"responseId\":\"R7KlaaF6ruDaug--mcjYAQ\"}";
     Reader reader = null;
     int depth = 0;
@@ -227,5 +229,22 @@ public class LLMApiTest {
     } finally {
       safeclose(reader);
     }
+  }
+
+  @Test public void llmCommunicationTest() throws Exception {
+    if (!TestUtil.isEnabled("llmCommunicationTest", TestLevel.MANUAL)) { return; }
+    List<LLMApi> apiList = list(
+      new LLMApiOpenAI(LLMProperties.builder()
+        .baseUrl(System.getenv("OPENAI_API_BASE_URL"))
+        .apiKey(System.getenv("OPENAI_API_KEY"))
+        .model(System.getenv("OPENAI_API_MODEL"))
+        .build()
+      ),
+      new LLMApiOllama(LLMProperties.builder()
+        .baseUrl(System.getenv("OLLAMA_API_BASE_URL"))
+        .model(System.getenv("OLLAMA_API_MODEL"))
+        .build()
+      )
+    );
   }
 }
