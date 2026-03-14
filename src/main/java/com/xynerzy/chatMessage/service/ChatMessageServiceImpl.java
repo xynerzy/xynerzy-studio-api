@@ -7,6 +7,7 @@
  **/
 package com.xynerzy.chatMessage.service;
 
+import static com.xynerzy.commons.DataUtil.list;
 import static com.xynerzy.commons.DataUtil.valueOf;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 import static com.xynerzy.commons.StringUtil.concat;
@@ -25,6 +26,8 @@ import org.springframework.stereotype.Service;
 import com.xynerzy.chatMessage.entity.ChatMessageEntity.ChatMessage;
 import com.xynerzy.commons.llm.LLMApiBase;
 import com.xynerzy.commons.llm.LLMApiGemini;
+import com.xynerzy.commons.llm.LLMApiGeminiOAuth2;
+import com.xynerzy.commons.llm.LLMApiOllama;
 import com.xynerzy.commons.llm.LLMApiOpenAI;
 import com.xynerzy.commons.llm.LLMProperties;
 import com.xynerzy.main.entity.MainEntity;
@@ -71,12 +74,15 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         String messageId = UUID.randomUUID().toString();
         LLMProperties props = new LLMProperties();
         LLMProperties props2 = new LLMProperties();
+        LLMProperties props3 = new LLMProperties();
         props.setApiKey(System.getenv("GEMINI_API_KEY"));
         props.setModel(System.getenv("GEMINI_API_MODEL"));
         props2.setBaseUrl(System.getenv("OPENAI_API_BASE_URL"));
         props2.setModel(System.getenv("OPENAI_API_MODEL"));
         props2.setApiKey(System.getenv("OPENAI_API_KEY"));
-
+        props3.setBaseUrl(System.getenv("OLLAMA_API_BASE_URL"));
+        props3.setModel(System.getenv("OLLAMA_API_MODEL"));
+        log.trace("ENABLED-API:{}", list(LLMApiOpenAI.class, LLMApiGemini.class, LLMApiGeminiOAuth2.class, LLMApiOllama.class));
         // log.debug("PROPS:{}", props);
         // LLMApiBase api = new LLMApiOpenAI(props);
         // LLMApiBase api2 = new LLMApiOpenAI(props);

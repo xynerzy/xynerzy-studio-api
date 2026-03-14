@@ -7,20 +7,32 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.CONTENT_TYPE;
+import static com.xynerzy.commons.Constants.CTYPE_JSON;
+import static com.xynerzy.commons.Constants.UTF8;
+import static com.xynerzy.commons.DataUtil.map;
+import static com.xynerzy.commons.IOUtil.readAsString;
+import static com.xynerzy.commons.IOUtil.safeclose;
 import static com.xynerzy.commons.ReflectionUtil.cast;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-import org.springframework.web.reactive.function.client.WebClient;
+import org.json.JSONObject;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xynerzy.system.runtime.CoreSystem;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,69 +40,133 @@ import lombok.extern.slf4j.Slf4j;
 public class LLMApiOllama implements LLMApiBase {
 
   private final LLMProperties props;
-  private final WebClient webClient;
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private long lastRequestTime;
 
-  public LLMApiOllama(LLMProperties llmProperties, WebClient.Builder webClientBuilder) {
-    this.props = llmProperties;
-    this.webClient = webClientBuilder.baseUrl(llmProperties.getBaseUrl()).build();
-  }
-
-  @Override
-  public LinkedBlockingQueue<Object> streamChat(Map<String, Object> request, Consumer<String> onNext, Runnable onComplete, Consumer<Throwable> onError) {
+  @Override public LinkedBlockingQueue<Object> streamChat(
+    Map<String, Object> rqst,
+    Consumer<String> onNext,
+    Runnable onComplete,
+    Consumer<Throwable> onError) {
     LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
-    OllamaRequest ollamaRequest = new OllamaRequest(props.getModel(), cast(request.get("user"), ""), cast(request.get("system"), ""), true);
-    webClient.post()
-      .uri("/api/generate")
-      .bodyValue(ollamaRequest)
-      .retrieve()
-      .bodyToFlux(String.class)
-      .map(line -> {
+    long DELAY = 200;
+    int MAX_RETRY = 3;
+    CoreSystem.executeBackground(() -> {
+      long timeDiff = System.currentTimeMillis() - lastRequestTime;
+      Map<String, Object> rqmap = map(
+        "model", props.getModel(),
+        "prompt", cast(rqst.get("user"), ""),
+        "system", cast(rqst.get("system"), ""),
+        "stream", true
+      );
+      RETRY: for (int retry = 0; retry < MAX_RETRY; retry++) {
         try {
-          return objectMapper.readValue(line, OllamaResponse.class);
-        } catch (Exception e) {
-          throw new RuntimeException("Failed to parse Ollama response: " + line, e);
-        }
-      })
-      .takeUntil(OllamaResponse::isDone)
-      .subscribe(
-        response -> {
-          if (response.getResponse() != null) {
-            onNext.accept(response.getResponse());
+          if (timeDiff < DELAY) {
+            try {
+              Thread.sleep(DELAY - timeDiff);
+            } catch (Exception e) {
+              log.trace("E:", e);
+            }
           }
-        },
-        e -> {
+          // log.debug("PROPS:{}", props);
+          URL url = new URL(String.format("%s%s", props.getBaseUrl(), "/api/generate"));
+          HttpURLConnection con = (HttpURLConnection) url.openConnection();
+          /* Set the connection timeout to 5 seconds. */
+          con.setConnectTimeout(50000);
+          con.setReadTimeout(50000);
+          con.setRequestMethod("POST");
+          con.setDoInput(true);
+          con.setDoOutput(true);
+          con.setInstanceFollowRedirects(true);
+          con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
+          InputStream istrm = null;
+          OutputStream ostrm = null;
+          BufferedReader bfrdr = null;
+          WritableByteChannel wchnl = null;
+          ReadableByteChannel rchnl = null;
+          int respcd = -1;
+          ByteBuffer btbuf = null;
+          Reader reader = null;
+          try {
+            // log.debug("REQUEST-BODY:{}", rqmap);
+            wchnl = Channels.newChannel(ostrm = con.getOutputStream());
+            btbuf = ByteBuffer.wrap(new JSONObject(rqmap).toString().getBytes(UTF8));
+            wchnl.write(btbuf);
+            respcd = con.getResponseCode();
+          } finally {
+            if (btbuf != null) { btbuf.clear(); }
+            safeclose(wchnl);
+            safeclose(ostrm);
+          }
+          log.info("START-REQUEST[{}]...", respcd);
+          switch (respcd) {
+          case 429: {
+            log.debug("TOO_MANY_REQUESTS..");
+            continue RETRY;
+          }
+          case 200: {
+          } break;
+          default:
+            reader = Channels.newReader(
+              rchnl = Channels.newChannel(istrm = con.getErrorStream()), UTF8);
+            String msg = readAsString(reader);
+            log.info("ERR:{}", msg);
+            onError.accept(new RuntimeException(msg));
+            ret.add(true);
+            break RETRY;
+          }
+          try {
+            reader = Channels.newReader(
+              rchnl = Channels.newChannel(istrm = con.getInputStream()), UTF8);
+            bfrdr = new BufferedReader(reader);
+            LOOP: for (String rl; (rl = bfrdr.readLine()) != null;) {
+              // log.debug(rl);
+              // if (cnt > 10) {
+              //   con.disconnect();
+              //   break LOOP;
+              // }
+              String data = "";
+              if (rl.startsWith("\u007b")) {
+                /* {:007b ... }:007d */ 
+                data = rl;
+              }
+              if (data == null || "".equals(data)) { continue LOOP; }
+              try {
+                log.trace("DATA:{}", data);
+                JSONObject json = new JSONObject(data);
+                String content = json.optString("response");
+                if (json.optBoolean("done", false)) {
+                  break LOOP;
+                }
+                if (content != null && !content.isEmpty()) {
+                  onNext.accept(content);
+                }
+              } catch (Exception e) {
+                onNext.accept("\0\0");
+                ret.add(e);
+                log.error("Error parsing stream data: {}", data, e);
+              }
+              continue LOOP;
+            }
+            onComplete.run();
+            ret.add(Boolean.TRUE);
+            break RETRY;
+          } finally {
+            try { con.disconnect(); } catch (Exception ignore) { }
+            safeclose(bfrdr);
+            safeclose(reader);
+            safeclose(rchnl);
+            safeclose(istrm);
+          }
+        } catch (Exception e) {
+          log.warn("E:", e);
           onError.accept(e);
-          ret.add(e);
-        },
-        () -> {
-          onComplete.run();
           ret.add(Boolean.TRUE);
         }
-      );
+        if (retry == MAX_RETRY - 1) {
+          ret.add(Boolean.TRUE);
+        }
+      }
+    });
     return ret;
-  }
-
-  @Data @AllArgsConstructor
-  private static class OllamaRequest {
-    private String model;
-    private String prompt;
-    private String system;
-    private boolean stream;
-  }
-
-  @Data @NoArgsConstructor @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class OllamaResponse {
-    private String model;
-    private String created_at;
-    private String response;
-    private boolean done;
-    private long total_duration;
-    private long load_duration;
-    private int prompt_eval_count;
-    private long prompt_eval_duration;
-    private int eval_count;
-    private long eval_duration;
-    // private int[] context;
   }
 }

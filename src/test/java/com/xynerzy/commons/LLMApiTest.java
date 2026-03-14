@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.StandardEnvironment;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -50,13 +49,11 @@ public class LLMApiTest {
     props.setModel(System.getenv("OPENAI_API_MODEL"));
     props.setApiKey(System.getenv("OPENAI_API_KEY"));
 
-    // WebClient.Builder wbldr = WebClient.builder();
-    // LLMApiBase api = new LLMApiOpenAI(props, wbldr);
     LLMApiBase api = new LLMApiOpenAI(props);
-
-    Map<String, Object> request = Map.of("user", "Hello? Who are you?");
-    
     CoreSystem.getInstance(new StandardEnvironment());
+
+    Map<String, Object> request = map("user", "Hello? Who are you?");
+    
     StringBuilder resp = new StringBuilder();
     /* Act */
     log.info("Sending request to Open-AI...");
@@ -89,8 +86,8 @@ public class LLMApiTest {
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
 
-    // WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiGemini(props);
+    CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map(
       // "system", "He is korean, speak in Korean Language",
@@ -100,7 +97,6 @@ public class LLMApiTest {
     StringBuilder resp = new StringBuilder();
     /* Act */
     log.info("Sending request to Gemini API...");
-    CoreSystem.getInstance(new StandardEnvironment());
     LinkedBlockingQueue<Object> latch = api.streamChat(
         request,
         chunk -> {
@@ -124,13 +120,11 @@ public class LLMApiTest {
     props.setRefreshToken(System.getenv("GEMINI_API_REFRESH_TOKEN"));
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
-    // WebClient.Builder wbldr = WebClient.builder();
     LLMApiBase api = new LLMApiGeminiOAuth2(props);
-
-    Map<String, Object> request = Map.of("user", "Hello? Who are you?");
-
-    StringBuilder resp = new StringBuilder();
     CoreSystem.getInstance(new StandardEnvironment());
+
+    Map<String, Object> request = map("user", "Hello? Who are you?");
+    StringBuilder resp = new StringBuilder();
     /* Act */
     log.info("Sending request to Gemini API with OAuth2...");
     LinkedBlockingQueue<Object> latch = api.streamChat(
@@ -156,10 +150,13 @@ public class LLMApiTest {
     /* "gpt-oss:20b" */
     props.setModel(System.getenv("OLLAMA_API_MODEL"));
 
-    WebClient.Builder wbldr = WebClient.builder();
-    LLMApiOllama api = new LLMApiOllama(props, wbldr);
+    LLMApiOllama api = new LLMApiOllama(props);
+    CoreSystem.getInstance(new StandardEnvironment());
 
-    Map<String, Object> request = Map.of("user", "Hello? Who are you?");
+    Map<String, Object> request = map(
+      "user", "Hello? Who are you?",
+      "system", "He is korean, answer in korean"
+    );
 
     StringBuilder resp = new StringBuilder();
     /* Act */

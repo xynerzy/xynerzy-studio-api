@@ -10,6 +10,8 @@ package com.xynerzy.commons.llm;
 import static com.xynerzy.commons.Constants.CONTENT_TYPE;
 import static com.xynerzy.commons.Constants.CTYPE_JSON;
 import static com.xynerzy.commons.Constants.UTF8;
+import static com.xynerzy.commons.DataUtil.list;
+import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.readAsString;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static com.xynerzy.commons.ReflectionUtil.cast;
@@ -24,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -54,11 +55,11 @@ public class LLMApiOpenAI implements LLMApiBase {
     int MAX_RETRY = 3;
     CoreSystem.executeBackground(() -> {
       long timeDiff = System.currentTimeMillis() - lastRequestTime;
-      List<Map<String, String>> parts = new ArrayList<>();
+      List<Map<String, Object>> parts = list();
       for (String k : rqst.keySet()) {
-        parts.add(Map.of("role", k, "content", cast(rqst.get(k), "")));
+        parts.add(map("role", k, "content", cast(rqst.get(k), "")));
       }
-      Map<String, Object> rqmap = Map.of(
+      Map<String, Object> rqmap = map(
         "model", props.getModel(),
         "messages", parts,
         "temperature", 0.7,
