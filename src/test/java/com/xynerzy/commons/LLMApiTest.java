@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LLMApiTest {
   @Test void testOpenAIApi() throws Exception {
     if (!TestUtil.isEnabled("testOpenAIApi", TestLevel.MANUAL)) { return; }
+    CoreSystem.getInstance(new StandardEnvironment());
     LLMProperties props = new LLMProperties();
     /* "http://localhost:1234/v1" */
     props.setBaseUrl(System.getenv("OPENAI_API_BASE_URL"));
@@ -51,7 +52,6 @@ public class LLMApiTest {
     props.setApiKey(System.getenv("OPENAI_API_KEY"));
 
     LLMApi api = new LLMApiOpenAI(props);
-    CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map("user", "Hello? Who are you?");
     
@@ -82,13 +82,13 @@ public class LLMApiTest {
 
   @Test void testGeminiApi() throws Exception {
     if (!TestUtil.isEnabled("testGeminiApi", TestLevel.MANUAL)) { return; }
+    CoreSystem.getInstance(new StandardEnvironment());
     LLMProperties props = new LLMProperties();
     props.setApiKey(System.getenv("GEMINI_API_KEY"));
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
 
     LLMApi api = new LLMApiGemini(props);
-    CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map(
       // "system", "He is korean, speak in Korean Language",
@@ -115,6 +115,7 @@ public class LLMApiTest {
 
   @Test void testGeminiApiOauth2() throws Exception {
     if (!TestUtil.isEnabled("testGeminiApiOauth2", TestLevel.MANUAL)) { return; }
+    CoreSystem.getInstance(new StandardEnvironment());
     LLMProperties props = new LLMProperties();
     props.setClientId(System.getenv("GEMINI_API_CLIENT_ID"));
     props.setClientSecret(System.getenv("GEMINI_API_CLIENT_SECRET"));
@@ -122,7 +123,6 @@ public class LLMApiTest {
     /* "gemini-2.5-flash" */
     props.setModel(System.getenv("GEMINI_API_MODEL"));
     LLMApi api = new LLMApiGeminiOAuth2(props);
-    CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map("user", "Hello? Who are you?");
     StringBuilder resp = new StringBuilder();
@@ -145,6 +145,7 @@ public class LLMApiTest {
 
   @Test void testOllamaApi() throws InterruptedException {
     if (!TestUtil.isEnabled("testOllamaApi", TestLevel.MANUAL)) { return; }
+    CoreSystem.getInstance(new StandardEnvironment());
     LLMProperties props = new LLMProperties();
     /* "http://localhost:11434" */
     props.setBaseUrl(System.getenv("OLLAMA_API_BASE_URL"));
@@ -152,11 +153,12 @@ public class LLMApiTest {
     props.setModel(System.getenv("OLLAMA_API_MODEL"));
 
     LLMApiOllama api = new LLMApiOllama(props);
-    CoreSystem.getInstance(new StandardEnvironment());
 
     Map<String, Object> request = map(
       "user", "Hello? Who are you?",
+      // "user", ".",
       "system", "He is korean, answer in korean"
+      // "system", ""
     );
 
     StringBuilder resp = new StringBuilder();
@@ -231,8 +233,10 @@ public class LLMApiTest {
     }
   }
 
-  @Test public void llmCommunicationTest() throws Exception {
+  @Test public void llmTikiTakaTest() throws Exception {
     if (!TestUtil.isEnabled("llmCommunicationTest", TestLevel.MANUAL)) { return; }
+    CoreSystem.getInstance(new StandardEnvironment());
+    int MAX_CONVERSATIONS = 2;
     List<LLMApi> apiList = list(
       new LLMApiOpenAI(LLMProperties.builder()
         .baseUrl(System.getenv("OPENAI_API_BASE_URL"))
@@ -246,5 +250,44 @@ public class LLMApiTest {
         .build()
       )
     );
+    LLMApi manager = apiList.get(1);
+    StringBuilder summary1 = new StringBuilder();
+    StringBuilder summary2 = new StringBuilder();
+    StringBuilder talk = new StringBuilder();
+    String q = "", a = "";
+    summary1.append(System.getenv("TALKER1_MOTIVE"));
+    summary2.append(System.getenv("TALKER2_MOTIVE"));
+    LinkedBlockingQueue<Object> latch = null;
+    talk.append(System.getenv("GREETINGS"));
+    // for (int inx = 0; inx < MAX_CONVERSATIONS; inx++) {
+      q = String.valueOf(talk);
+      talk.setLength(0);
+      latch = apiList.get(0).streamChat(
+        map("user", q, "system", String.format("%s", summary1)),
+        v -> {
+          log.trace("V:{}", v);
+          talk.append(v);
+        }, () -> { }, e -> { });
+      while(!Boolean.TRUE.equals(latch.poll(300, TimeUnit.MILLISECONDS)));
+      a = String.valueOf(talk);
+      log.debug("Q:{} / A:{}", q, a);
+      talk.setLength(0);
+      q = a;
+      latch = apiList.get(1).streamChat(
+        map("user", q, "system", String.format("%s", summary2)),
+        v -> {
+          log.trace("V:{}", v);
+          talk.append(v);
+        }, () -> { }, e -> { });
+      while(!Boolean.TRUE.equals(latch.poll(300, TimeUnit.MILLISECONDS)));
+      a = String.valueOf(talk);
+      log.debug("Q:{} / A:{}", q, a);
+      talk.setLength(0);
+      // latch = manager.streamChat(
+      //   map("user", String.format("summarize this : Q:%s, A:%s", q, a)),
+      //   v -> talk.append(v), () -> { }, e -> { });
+      // latch.poll(1000, TimeUnit.MILLISECONDS);
+      // log.debug("SUMMARY:{}", talk);
+    // }
   }
 }
