@@ -38,9 +38,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
+import com.xynerzy.commons.SimpleHttpClientUtil;
 import com.xynerzy.system.runtime.CoreSystem;
 
 import lombok.RequiredArgsConstructor;
@@ -93,14 +91,17 @@ public class LLMApiGeminiOAuth2 implements LLMApiBase {
       /* Issue an access token using a refresh token */
       String accessToken = "";
       try {
-        accessToken = new GoogleRefreshTokenRequest(
-          new NetHttpTransport(),
-          new GsonFactory(),
-          props.getRefreshToken(),
-          props.getClientId(),
-          props.getClientSecret())
-          .execute()
-          .getAccessToken();
+        String tkurl = "https://accounts.google.com/o/oauth2/token";
+        Map<String, Object> tkprm = map(
+          "client_id", props.getClientId(),
+          "client_secret", props.getClientSecret(),
+          "refresh_token", props.getRefreshToken(),
+          "grant_type", "refresh_token"
+        );
+        String tkres = SimpleHttpClientUtil
+          .simpleHttpRequest(tkurl, "POST", tkprm, map());
+        JSONObject tkjson = new JSONObject(tkres);
+        accessToken = tkjson.optString("access_token", "");
       } catch (Exception e) {
         log.info("Can't issue access-token");
         onError.accept(e);
