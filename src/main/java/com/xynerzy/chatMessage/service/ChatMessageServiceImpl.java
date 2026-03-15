@@ -84,10 +84,10 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         props3.setModel(System.getenv("OLLAMA_API_MODEL"));
         log.trace("ENABLED-API:{}", list(LLMApiOpenAI.class, LLMApiGemini.class, LLMApiGeminiOAuth2.class, LLMApiOllama.class));
         // log.debug("PROPS:{}", props);
-        // LLMApiBase api = new LLMApiGemini(props);
-        // LLMApiBase api = new LLMApiGeminiOAuth2(props);
-        // LLMApiBase api = new LLMApiOpenAI(props2);
-        LLMApi api = new LLMApiOllama(props3);
+        // LLMApi api = new LLMApiGemini(props);
+        // LLMApi api = new LLMApiGeminiOAuth2(props);
+        LLMApi api = new LLMApiOpenAI(props2);
+        // LLMApi api = new LLMApiOllama(props3);
         String sstr = cast(cctx.get("summary"), "");
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("user", content);

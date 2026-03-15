@@ -7,6 +7,8 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.AUTHORIZATION;
+import static com.xynerzy.commons.Constants.BEARER;
 import static com.xynerzy.commons.Constants.CONTENT_TYPE;
 import static com.xynerzy.commons.Constants.CTYPE_JSON;
 import static com.xynerzy.commons.Constants.UTF8;
@@ -15,6 +17,7 @@ import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.readAsString;
 import static com.xynerzy.commons.IOUtil.safeclose;
 import static com.xynerzy.commons.ReflectionUtil.cast;
+import static com.xynerzy.commons.StringUtil.concat;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -32,7 +35,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.json.JSONObject;
-import org.springframework.http.HttpHeaders;
 
 import com.xynerzy.system.runtime.CoreSystem;
 
@@ -91,7 +93,7 @@ public class LLMApiOpenAI implements LLMApi {
           con.setRequestProperty(CONTENT_TYPE, CTYPE_JSON);
           if (props.getApiKey() != null) {
             // log.info("API-KEY:{}", props.getApiKey());
-            con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + props.getApiKey());
+            con.setRequestProperty(AUTHORIZATION, concat(BEARER, " ", props.getApiKey()));
           }
           InputStream istrm = null;
           OutputStream ostrm = null;

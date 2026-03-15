@@ -44,7 +44,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.json.JSONObject;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +54,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -67,6 +67,7 @@ import org.springframework.web.servlet.handler.WebRequestHandlerInterceptorAdapt
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.yaml.snakeyaml.Yaml;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xynerzy.Application;
 
 import jakarta.servlet.FilterChain;
@@ -108,6 +109,8 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
 
   @Getter private File staticWeb;
 
+  @Getter private ObjectMapper objectMapper = new ObjectMapper();
+
   private CoreSystem(Environment environment) {
     log.trace("INSTANCE:{}", instance);
     this.environment = environment;
@@ -129,6 +132,7 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
   public static CoreSystem getInstance(Environment environment) {
     synchronized(CoreSystem.class) {
       if (instance == null && environment != null) { instance = new CoreSystem(environment); }
+      if (instance == null && environment == null) { instance = new CoreSystem(new StandardEnvironment()); }
       return instance;
     }
   }
@@ -327,7 +331,9 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
         safeclose(reader);
       }
     }
-    if (log.isTraceEnabled()) { log.trace("SETTINGS:{} / {}", profile, new JSONObject(settingMap).toString(2)); }
+    
+    // if (log.isTraceEnabled()) { log.trace("SETTINGS:{} / {}", profile, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(settingMap)); }
+    
     {
       String overridePath = cast(getCascade(settingMap, "system.settings.override".split("[.]")), "");
       log.debug("SETTINGS-OVERRIDE:{}", overridePath);
@@ -395,19 +401,19 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
     return val;
   }
 
-  public static void putGlobal(String k, Object v) { instance.globalContext.put(k, v); }
-  public static Object getGlobal(String k) { return instance.globalContext.get(k); }
-  public static <T> T getGlobal(String k, T v) { return cast(instance.globalContext.get(k), v); }
-  public static Object removeGlobal(String k) { return instance.globalContext.remove(k); }
-  public static <T> T removeGlobal(String k, T v) { return cast(instance.globalContext.remove(k), v); }
+  public static void putGlobal(String k, Object v) { getInstance().globalContext.put(k, v); }
+  public static Object getGlobal(String k) { return getInstance().globalContext.get(k); }
+  public static <T> T getGlobal(String k, T v) { return cast(getInstance().globalContext.get(k), v); }
+  public static Object removeGlobal(String k) { return getInstance().globalContext.remove(k); }
+  public static <T> T removeGlobal(String k, T v) { return cast(getInstance().globalContext.remove(k), v); }
   public static void executeBackground(Runnable proc) { executeBackground(proc, null, null, null); }
   public static void executeBackground(Runnable proc, HttpServletRequest req, HttpServletResponse res, HttpSession ss) {
-    while(instance.threadQueue.size() > instance.executor.getMaximumPoolSize()) {
+    while(getInstance().threadQueue.size() > getInstance().executor.getMaximumPoolSize()) {
       try {
-        synchronized(instance.threadQueue) { instance.threadQueue.wait(100); }
+        synchronized(getInstance().threadQueue) { getInstance().threadQueue.wait(100); }
       } catch (Exception e) { log.trace("E:{}", e.getMessage()); }
     }
-    instance.executor.execute(() -> {
+    getInstance().executor.execute(() -> {
       if (req != null) { putGlobal(concat(HttpServletRequest.class.getName(), "@", currentThread().getId()), req != null ? req : currentRequest()); }
       if (res != null) { putGlobal(concat(HttpServletResponse.class.getName(), "@", currentThread().getId()), res != null ? res : currentResponse()); }
       if (ss != null) { putGlobal(concat(HttpSession.class.getName(), "@", currentThread().getId()), ss != null ? ss : currentSession()); }
@@ -420,7 +426,7 @@ public class CoreSystem implements ApplicationContextAware, ServletContextListen
       if (res != null) { removeGlobal(concat(HttpServletResponse.class.getName(), "@", currentThread().getId())); }
       if (ss != null) { removeGlobal(concat(HttpSession.class.getName(), "@", currentThread().getId())); }
       try {
-        synchronized(instance.threadQueue) { instance.threadQueue.notify(); }
+        synchronized(getInstance().threadQueue) { getInstance().threadQueue.notify(); }
       } catch (Exception e) { log.trace("E:{}", e.getMessage()); }
     });
   }

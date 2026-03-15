@@ -7,6 +7,8 @@
  **/
 package com.xynerzy.commons.llm;
 
+import static com.xynerzy.commons.Constants.AUTHORIZATION;
+import static com.xynerzy.commons.Constants.BEARER;
 import static com.xynerzy.commons.Constants.CONTENT_TYPE;
 import static com.xynerzy.commons.Constants.CTYPE_JSON;
 import static com.xynerzy.commons.Constants.UTF8;
@@ -14,6 +16,7 @@ import static com.xynerzy.commons.DataUtil.list;
 import static com.xynerzy.commons.DataUtil.map;
 import static com.xynerzy.commons.IOUtil.readAsString;
 import static com.xynerzy.commons.IOUtil.safeclose;
+import static com.xynerzy.commons.StringUtil.concat;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,7 +34,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.json.JSONObject;
-import org.springframework.http.HttpHeaders;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -134,7 +136,7 @@ public class LLMApiGeminiOAuth2 implements LLMApi {
           if (accessToken != null) {
             log.debug("ACCTOKEN:{}", accessToken);
             /* Call the API using the issued access token. */
-            con.setRequestProperty(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+            con.setRequestProperty(AUTHORIZATION, concat(BEARER, " ", accessToken));
           }
           InputStream istrm = null;
           OutputStream ostrm = null;
