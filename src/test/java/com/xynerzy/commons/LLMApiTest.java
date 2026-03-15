@@ -239,35 +239,28 @@ public class LLMApiTest {
         .model(System.getenv("OPENAI_API_MODEL"))
         .build()
       ),
-      new LLMApiOpenAI(LLMProperties.builder()
-        .baseUrl(System.getenv("OPENAI_API_BASE_URL"))
-        .apiKey(System.getenv("OPENAI_API_KEY"))
-        .model(System.getenv("OPENAI_API_MODEL"))
-        .build()
-      ),
       new LLMApiOllama(LLMProperties.builder()
         .baseUrl(System.getenv("OLLAMA_API_BASE_URL"))
         .model(System.getenv("OLLAMA_API_MODEL"))
         .build()
       )
     );
-    LLMApi manager = apiList.get(1);
     String user1 = "A";
     String user2 = "B";
-    StringBuilder summaryTot = new StringBuilder();
-    StringBuilder summary1 = new StringBuilder();
-    StringBuilder summary2 = new StringBuilder();
+    StringBuilder summary = new StringBuilder();
+    StringBuilder agent1 = new StringBuilder();
+    StringBuilder agent2 = new StringBuilder();
     StringBuilder talkbuf = new StringBuilder();
     String q = "", a = "";
-    String state = "" +
+    String basicState = String.format("" +
       "The list of participants is as follows: \n" +
       "-- \n" +
-      "A: Mentor \n" +
-      "B: Mentee \n" + 
-      "--\n";
-    summaryTot.append("");
-    summary1.append(String.format("%s%s", state, System.getenv("TALKER1_MOTIVE")));
-    summary2.append(String.format("%s%s", state, System.getenv("TALKER2_MOTIVE")));
+      "%s: Mentor \n" +
+      "%s: Mentee \n" + 
+      "--\n", user1, user2);
+    summary.append("");
+    agent1.append(String.format("%s%s", basicState, System.getenv("TALKER1_MOTIVE")));
+    agent2.append(String.format("%s%s", basicState, System.getenv("TALKER2_MOTIVE")));
     LinkedBlockingQueue<Object> latch = null;
     talkbuf.append(System.getenv("GREETINGS"));
     // for (int inx = 0; inx < MAX_CONVERSATIONS; inx++) {
@@ -275,35 +268,30 @@ public class LLMApiTest {
 
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_USERS[0]).streamChat(
-        map("user", String.format("%s: %s", user2, q), "system", String.format("%s", summary1)),
+        map("user", String.format("%s: %s", user2, q), "system", String.format("%s", agent1)),
         v -> talkbuf.append(v), () -> { }, e -> { });
       while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
       a = String.format("%s", talkbuf);
       log.debug("\n[Q]{}: {}\n[A]{}: {}", user2, q, user1, a);
       
       talkbuf.setLength(0);
-      log.debug("CHECK: {}", String.format("Summarize this conversation in 1000 characters or less. \n%s\n%s\n%s",
-          String.format("%s", summaryTot),
-          String.format("B: %s", q),
-          String.format("A: %s", a)
-          ));
       latch = apiList.get(LLM_INX_MANAGER).streamChat(
-        map("user", String.format("Summarize conversation in 1000 characters or less. \n%s\n%s\n%s",
-          String.format("%s", summaryTot),
-          String.format("B: %s", q),
-          String.format("A: %s", a)
+        map("user", String.format("Summarize follow conversations less than 1000 characters.\n%s\n%s\n%s",
+          String.format("%s", summary),
+          String.format("%s says \"%s\"", user2, q),
+          String.format("%s says \"%s\"", user1, a)
           ), 
-          "system", String.format("%s", state)),
+          "system", String.format("%s", basicState)),
           v -> talkbuf.append(v), () -> { }, e -> { });
       while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
-      summaryTot.setLength(0);
-      summaryTot.append(talkbuf);
-      log.debug("\nSUMMARY: {}", summaryTot);
+      summary.setLength(0);
+      summary.append(talkbuf);
+      log.debug("\nSUMMARY: {}", summary);
       
       q = String.format("%s", a);
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_USERS[1]).streamChat(
-        map("user", String.format("%s: %s", user1, q), "system", String.format("%s", summary2)),
+        map("user", String.format("%s: %s", user1, q), "system", String.format("%s", agent2)),
         v -> talkbuf.append(v), () -> { }, e -> { });
       while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
       a = String.format("%s", talkbuf);
@@ -311,17 +299,17 @@ public class LLMApiTest {
 
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_MANAGER).streamChat(
-        map("user", String.format("Summarize conversation in 1000 characters or less. \n%s\n%s\n%s",
-          String.format("%s", summaryTot),
-          String.format("A: %s", q),
-          String.format("B: %s", a)
+        map("user", String.format("Summarize follow conversations less than 1000 characters.\n%s\n%s\n%s",
+          String.format("%s", summary),
+          String.format("%s says \"%s\"", user1, q),
+          String.format("%s says \"%s\"", user2, a)
           ), 
-          "system", String.format("%s", state)),
+          "system", String.format("%s", basicState)),
           v -> talkbuf.append(v), () -> { }, e -> { });
       while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
-      summaryTot.setLength(0);
-      summaryTot.append(talkbuf);
-      log.debug("\nSUMMARY: {}", summaryTot);
+      summary.setLength(0);
+      summary.append(talkbuf);
+      log.debug("\nSUMMARY: {}", summary);
     // }
   }
 }
