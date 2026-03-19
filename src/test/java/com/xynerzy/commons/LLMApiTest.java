@@ -254,7 +254,7 @@ public class LLMApiTest {
     String q = "", a = "";
     String basicState = String.format("" +
       "The list of participants is as follows: \n" +
-      "-- \n" +
+      "--\n" +
       "%s: Mentor \n" +
       "%s: Mentee \n" + 
       "--\n", user1, user2);
@@ -268,7 +268,7 @@ public class LLMApiTest {
 
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_USERS[0]).streamChat(
-        map("user", String.format("%s: %s", user2, q), "system", String.format("%s", agent1)),
+        map("user", String.format("%s", q), "system", String.format("%s\n%s says last", agent1, user2)),
         v -> talkbuf.append(v), () -> { }, e -> { });
       while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
       a = String.format("%s", talkbuf);
@@ -276,10 +276,12 @@ public class LLMApiTest {
       
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_MANAGER).streamChat(
-        map("user", String.format("Summarize follow conversations less than 1000 characters.\n%s\n%s\n%s",
-          String.format("%s", summary),
-          String.format("%s says \"%s\"", user2, q),
-          String.format("%s says \"%s\"", user1, a)
+        map("user",
+          String.format(
+            "Summarize follow conversations less than 1000 characters.\n%s\n%s\n%s",
+            String.format("%s", summary),
+            String.format("%s says \"%s\"", user2, q),
+            String.format("%s says \"%s\"", user1, a)
           ), 
           "system", String.format("%s", basicState)),
           v -> talkbuf.append(v), () -> { }, e -> { });
@@ -287,22 +289,25 @@ public class LLMApiTest {
       summary.setLength(0);
       summary.append(talkbuf);
       log.debug("\nSUMMARY: {}", summary);
-      
+
       q = String.format("%s", a);
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_USERS[1]).streamChat(
-        map("user", String.format("%s: %s", user1, q), "system", String.format("%s", agent2)),
+        map("user", String.format("%s", q), "system", String.format("%s\n%s says last", agent2, user1)),
         v -> talkbuf.append(v), () -> { }, e -> { });
       while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
       a = String.format("%s", talkbuf);
       log.debug("\n[Q]{}: {}\n[A]{}: {}", user1, q, user2, a);
+      q = String.format("%s", a);
 
       talkbuf.setLength(0);
       latch = apiList.get(LLM_INX_MANAGER).streamChat(
-        map("user", String.format("Summarize follow conversations less than 1000 characters.\n%s\n%s\n%s",
-          String.format("%s", summary),
-          String.format("%s says \"%s\"", user1, q),
-          String.format("%s says \"%s\"", user2, a)
+        map("user",
+          String.format(
+            "Summarize follow conversations less than 1000 characters.\n%s\n%s\n%s",
+            String.format("%s", summary),
+            String.format("%s says \"%s\"", user1, q),
+            String.format("%s says \"%s\"", user2, a)
           ), 
           "system", String.format("%s", basicState)),
           v -> talkbuf.append(v), () -> { }, e -> { });
@@ -310,6 +315,32 @@ public class LLMApiTest {
       summary.setLength(0);
       summary.append(talkbuf);
       log.debug("\nSUMMARY: {}", summary);
+
+      talkbuf.setLength(0);
+      latch = apiList.get(LLM_INX_MANAGER).streamChat(
+        map("user",
+          String.format(
+          "%s\n" + 
+          "--\n "+
+          "Who will talk next? Aswer using Labels only",
+          summary
+          ), 
+          "system", String.format("%s", basicState)),
+          v -> talkbuf.append(v), () -> { }, e -> { });
+      while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
+      log.debug("NEXT: {}", talkbuf);
+      log.debug("SUMMARY:{}", summary);
+      log.debug("AGENT1:{}", agent1);
+      log.debug("AGENT2:{}", agent2);
+      log.debug("Q:{}", q);
+      talkbuf.setLength(0);
+      latch = apiList.get(LLM_INX_USERS[0]).streamChat(
+        map("user", String.format("%s", q), "system", String.format("%s\n%s\nyou are %s\n%s says last", basicState, summary, user1, user2)),
+        v -> talkbuf.append(v), () -> { }, e -> { });
+      while(latch.poll(300, TimeUnit.MILLISECONDS) == null);
+      a = String.format("%s", talkbuf);
+      log.debug("\n[Q]{}: {}\n[A]{}: {}", user1, q, user2, a);
+      
     // }
   }
 }
