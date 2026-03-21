@@ -26,6 +26,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
@@ -42,7 +43,7 @@ public class LLMApiOllama implements LLMApi {
   private final LLMProperties props;
   private long lastRequestTime;
 
-  @Override public LinkedBlockingQueue<Object> streamChat(
+  @Override public BlockingQueue<Object> streamChat(
     Map<String, Object> rqst,
     Consumer<String> onNext,
     Runnable onComplete,
